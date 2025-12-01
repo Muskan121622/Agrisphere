@@ -1,13 +1,12 @@
-  # 🌾 AgriSphere AI - Smart Farming Intelligence Platform
+# 🌾 AgriSphere AI - Smart Farming Intelligence Platform
 
 <div align="center">
+
 
 
 **India's First AI + GIS Smart Farming Intelligence Platform**
 
 *Complete seed-to-market intelligence with multi-class disease detection, digital twin mapping, yield prediction, IoT monitoring, and rural-accessible technology*
-
-[🎯 **Live Demo**](https://agrisphere-ai.vercel.app/) | [📖 **Documentation**](#documentation) | [🚀 **Quick Start**](#quick-start) | [🤝 **Contributing**](#contributing)
 
 </div>
 
@@ -121,14 +120,28 @@
    npm install
    ```
 
-3. **Start the development server**
+3. **Install Firebase**
+   ```bash
+   npm install firebase
+   ```
+
+4. **Create .env file**
+   Create a `.env` file in the root directory with the following content:
+   ```
+   VITE_OPENAI_API_KEY=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
+   VITE_MAPBOX_ACCESS_TOKEN=pk.eyJ1IjoibXVza2FuMTIxNiIsImEiOiJjbTkzNDFoM2owYnUyMndzNDI1OG4yY3k4In0.4j6e_uHRIj9rwP8W7R658Q
+   VITE_WEATHER_API_KEY=796cdb2a0021887a20495ba82c2b2cc5
+   ```
+
+5. **Start the development server**
    ```bash
    npm run dev
    ```
 
-4. **Access the application**
+6. **Access the application**
    ```
-   Frontend: http://localhost:5173
+   Frontend: http://localhost:8080
+   Backend API: http://localhost:5000
    ```
 
 ### 🐳 Docker Installation
@@ -136,7 +149,7 @@
 ```bash
 # Build and run with Docker
 docker build -t agrisphere-ai .
-docker run -p 5173:5173 -p 5000:5000 agrisphere-ai
+docker run -p 8080:8080 -p 5000:5000 agrisphere-ai
 ```
 
 ---
@@ -391,93 +404,48 @@ Include:
 - Detailed description of the bug
 - Steps to reproduce
 - Expected vs actual behavior
-- Screenshots (if applicable)
-- System information
+- Screenshots if applicable
+- System information (OS, browser, etc.)
 
 ### **💡 Feature Requests**
 
-We love new ideas! Open an issue with:
-- Clear description of the feature
+Have ideas for new features? Open an issue on GitHub with:
+- Clear feature description
 - Use case and benefits
-- Possible implementation approach
+- Implementation suggestions (optional)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```
-MIT License - Feel free to use this project for personal or commercial purposes
-```
+---
+
+## 👥 Team
+
+- **Muskan** - Lead Developer & ML Engineer
+- **Contributors** - Welcome to join our mission!
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **PlantVillage Dataset**: Disease detection training data
-- **Indian Meteorological Department**: Weather data
-- **ISRO Bhuvan**: Satellite imagery
-- **Firebase Team**: Backend infrastructure
-- **TensorFlow.js Team**: Machine learning framework
-- **OpenAI**: Advanced AI capabilities
-- **React Community**: Amazing frontend framework
+- [PlantVillage Dataset](https://plantvillage.psu.edu/) for disease detection training data
+- [OpenAI](https://openai.com/) for advanced AI capabilities
+- [Mapbox](https://www.mapbox.com/) for GIS mapping services
+- [TensorFlow.js](https://tensorflow.org/js) for client-side ML
+- All contributors and supporters of this project
 
 ---
 
-## 👨‍💻 Author
+## 📞 Contact
 
-<div align="center">
-
-### **AgriSphere AI Team**
-*AI-Powered Agricultural Innovation*
-
-[![GitHub](https://img.shields.io/badge/GitHub-AgriSphere--AI-black?style=flat&logo=github)](https://github.com/your-username/agrisphere-ai)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://linkedin.com/company/agrisphere-ai)
-[![Email](https://img.shields.io/badge/Email-Contact-red?style=flat&logo=gmail)](mailto:contact@agrisphere.ai)
-[![Website](https://img.shields.io/badge/Website-agrisphere.ai-green?style=flat&logo=web)](https://agrisphere.ai)
-
-*"Revolutionizing Indian Agriculture with AI and GIS Technology"*
-
-</div>
+For support, feature requests, or collaboration inquiries:
+- Email: contact@agrisphere.ai
+- Twitter: [@AgriSphereAI](https://twitter.com/AgriSphereAI)
+- LinkedIn: [AgriSphere AI](https://linkedin.com/company/agrisphere-ai)
 
 ---
 
-## 📊 Project Stats
-
-<div align="center">
-
-![GitHub repo size](https://img.shields.io/github/repo-size/your-username/agrisphere-ai)
-![GitHub code size](https://img.shields.io/github/languages/code-size/your-username/agrisphere-ai)
-![GitHub last commit](https://img.shields.io/github/last-commit/your-username/agrisphere-ai)
-![GitHub issues](https://img.shields.io/github/issues/your-username/agrisphere-ai)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/your-username/agrisphere-ai)
-
-**⭐ If you find this project useful, please consider giving it a star!**
-
-</div>
-
----
-
-## 🚀 What's Next?
-
-### **Planned Features**
-- [ ] Mobile app development (React Native)
-- [ ] Advanced satellite imagery analysis
-- [ ] Multi-language voice support (12+ Indian languages)
-- [ ] Government scheme AI integration
-- [ ] Farmer cooperative platform
-- [ ] Carbon footprint tracking
-- [ ] Export market intelligence
-- [ ] Drone integration for field monitoring
-
-### **Technical Improvements**
-- [ ] Model compression for mobile deployment
-- [ ] Real-time collaborative farming
-- [ ] Advanced computer vision features
-- [ ] Predictive maintenance for equipment
-- [ ] Integration with agricultural machinery
-
----
-
-<div align="center">  do  according to ss provides and  haa  samples to test  is inside  sample test folder 
+<p align="center">Made with ❤️ for Indian Farmers</p>
