@@ -268,18 +268,13 @@ Agrisphere/
 
 2. **Environment Variables**
    ```
-   VITE_FIREBASE_API_KEY=your_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_domain
-   VITE_OPENAI_API_KEY=your_openai_key
-   ```
-
-### **Railway/Render (API Server)**
-
-1. **Deploy Python API**
-   ```bash
-   # Using Railway CLI
-   railway login
-   railway deploy
+VITE_FIREBASE_API_KEY=AIzaSyBJkpgg7K6yTyii-hBR2tCR0AX21bTQNgw
+VITE_FIREBASE_AUTH_DOMAIN=agrispace-ea219.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=agrispace-ea219
+VITE_FIREBASE_STORAGE_BUCKET=agrispace-ea219.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=528915442362
+VITE_FIREBASE_APP_ID=1:528915442362:web:1c00c4257780e04aea3083
+VITE_FIREBASE_MEASUREMENT_ID=G-WWZSNCRDH0
    ```
 
 ### **Firebase Hosting Alternative**
