@@ -1,14 +1,7 @@
-# 🌾 AgriSphere AI - Smart Farming Intelligence Platform
+  # 🌾 AgriSphere AI - Smart Farming Intelligence Platform
 
 <div align="center">
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Coming%20Soon-brightgreen)](https://agrisphere-ai.vercel.app/)
-[![React](https://img.shields.io/badge/React-18.3+-blue.svg)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue.svg)](https://typescriptlang.org)
-[![TensorFlow.js](https://img.shields.io/badge/TensorFlow.js-4.22+-orange.svg)](https://tensorflow.org/js)
-[![Firebase](https://img.shields.io/badge/Firebase-9.0+-yellow.svg)](https://firebase.google.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/your-username/agrisphere-ai.svg)](https://github.com/your-username/agrisphere-ai/stargazers)
 
 **India's First AI + GIS Smart Farming Intelligence Platform**
 
@@ -487,10 +480,4 @@ MIT License - Feel free to use this project for personal or commercial purposes
 
 ---
 
-<div align="center">
-
-**Built with ❤️ for Indian farmers and agricultural innovation**
-
-*Empowering 500M+ farmers with cutting-edge AI technology*
-
-</div>
+<div align="center">  do  according to ss provides and  haa  samples to test  is inside  sample test folder 
