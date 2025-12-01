@@ -267,7 +267,6 @@ Agrisphere/
 
 
 2. **Environment Variables**
-   ```
 VITE_FIREBASE_API_KEY=AIzaSyBJkpgg7K6yTyii-hBR2tCR0AX21bTQNgw
 VITE_FIREBASE_AUTH_DOMAIN=agrispace-ea219.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=agrispace-ea219
