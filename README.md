@@ -29,21 +29,24 @@
 
 ---
 
-## 🚀 Live Demo
-
-**Experience the platform live:** [https://agrisphere-ai.vercel.app/](https://agrisphere-ai.vercel.app/)
 
 ### 📱 Platform Screenshots
 
 *Add screenshots of your dashboard here - main interface, disease detection, digital twin, yield prediction*
 
 ```
-🖼️ Main Dashboard Interface
-🖼️ Disease Detection Results
-🖼️ Digital Twin Mapping
-🖼️ Yield Prediction Analytics
-🖼️ IoT Monitoring Dashboard
-🖼️ Voice Assistant Interface
+🖼️ Main Dashboard Interface <img width="1251" height="612" alt="image" src="https://github.com/user-attachments/assets/a647f40d-324b-46ce-a103-ffc74851a910" />
+
+🖼️ Disease Detection Results <img width="1027" height="875" alt="image" src="https://github.com/user-attachments/assets/b0057dc4-78fe-4db0-ad8e-074780b6ac30" />
+<img width="1001" height="792" alt="image" src="https://github.com/user-attachments/assets/d986653e-a6c0-4613-bd03-79aa8a27e54b" />
+
+
+🖼️ Digital Twin Mapping  <img width="1526" height="795" alt="image" src="https://github.com/user-attachments/assets/498f32fc-4b3b-470d-afbb-77563d6888e9" />
+
+🖼️ Yield Prediction Analytics <img width="1032" height="834" alt="image" src="https://github.com/user-attachments/assets/c061e44b-7dd3-4374-9711-c6c722b65ca8" />
+<img width="1293" height="839" alt="image" src="https://github.com/user-attachments/assets/af894d17-d220-4615-9920-602d2463be48" />
+🖼️ Voice Assistant Interface  <img width="990" height="422" alt="image" src="https://github.com/user-attachments/assets/ad5498b9-2004-437d-a08b-213ffb51492f" />
+
 ```
 
 ---
@@ -141,15 +144,16 @@
 6. **Access the application**
    ```
    Frontend: http://localhost:8080
-   Backend API: http://localhost:5000
+   Backend API or Python : http://localhost:5000
    ```
 
-### 🐳 Docker Installation
+### 🐳 Python Installation
 
 ```bash
-# Build and run with Docker
-docker build -t agrisphere-ai .
-docker run -p 8080:8080 -p 5000:5000 agrisphere-ai
+requirements_api.txt
+requirements_training.txt
+requirements_yield.txt
+simple_requirements.txt
 ```
 
 ---
@@ -231,7 +235,7 @@ docker run -p 8080:8080 -p 5000:5000 agrisphere-ai
 ## 🏗️ Project Structure
 
 ```
-agrisphere-ai/
+Agrisphere/
 ├── 📁 src/
 │   ├── 📁 components/          # Reusable UI components
 │   │   ├── ui/                # shadcn/ui components
@@ -265,18 +269,7 @@ agrisphere-ai/
 
 ---
 
-## 🚀 Deployment
 
-### **Vercel Deployment (Frontend)**
-
-1. **Connect Repository**
-   ```bash
-   # Install Vercel CLI
-   npm i -g vercel
-
-   # Deploy
-   vercel --prod
-   ```
 
 2. **Environment Variables**
    ```
@@ -292,12 +285,6 @@ agrisphere-ai/
    # Using Railway CLI
    railway login
    railway deploy
-   ```
-
-2. **Environment Setup**
-   ```
-   FLASK_ENV=production
-   MODEL_PATH=/app/models/
    ```
 
 ### **Firebase Hosting Alternative**
