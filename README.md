@@ -113,22 +113,17 @@
 
 ### 🔧 Installation
 
-1. **Navigate to the project directory**
-   ```bash
-   cd agrisphere-ai-93aee827
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Install Firebase**
+2.. **Install Firebase**
    ```bash
    npm install firebase
    ```
 
-4. **Create .env file**
+3. **Create .env file**
    Create a `.env` file in the root directory with the following content:
    ```
    VITE_OPENAI_API_KEY=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
@@ -136,12 +131,12 @@
    VITE_WEATHER_API_KEY=796cdb2a0021887a20495ba82c2b2cc5
    ```
 
-5. **Start the development server**
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. **Access the application**
+5. **Access the application**
    ```
    Frontend: http://localhost:8080
    Backend API or Python : http://localhost:5000
