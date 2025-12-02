@@ -34,7 +34,7 @@
 
 *Add screenshots of your dashboard here - main interface, disease detection, digital twin, yield prediction*
 
-```
+
 🖼️ Main Dashboard Interface <img width="1251" height="612" alt="image" src="https://github.com/user-attachments/assets/a647f40d-324b-46ce-a103-ffc74851a910" />
 
 🖼️ Disease Detection Results <img width="1027" height="875" alt="image" src="https://github.com/user-attachments/assets/b0057dc4-78fe-4db0-ad8e-074780b6ac30" />
@@ -47,7 +47,7 @@
 <img width="1293" height="839" alt="image" src="https://github.com/user-attachments/assets/af894d17-d220-4615-9920-602d2463be48" />
 🖼️ Voice Assistant Interface  <img width="990" height="422" alt="image" src="https://github.com/user-attachments/assets/ad5498b9-2004-437d-a08b-213ffb51492f" />
 
-```
+
 
 ---
 
