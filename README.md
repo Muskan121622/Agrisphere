@@ -161,6 +161,23 @@ simple_requirements.txt
    - Take photos of leaves, stems, fruits, or soil
    - Support for JPG, PNG formats
    - Real-time analysis with confidence scores
+  
+You can test the AI model using images from the sample_test/ folder included in this repository.
+
+📤 Upload Crop Images
+
+Take photos of leaves, stems, fruits, or soil
+
+Or use the sample images from:
+
+```bash
+/sample_test/
+```
+---
+
+Supports JPG and PNG formats
+
+Real-time analysis with confidence scores
 
 2. **AI Analysis Results**
    - Disease identification with 95% accuracy
