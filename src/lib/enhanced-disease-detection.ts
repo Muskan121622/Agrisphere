@@ -107,8 +107,11 @@ export class EnhancedDiseaseDetector {
       const apiResult = await response.json();
       console.log('API result:', apiResult);
 
-      // Analyze image type based on filename
-      const plantPart = this.detectPlantPart(imageFile.name);
+      // Use the affected part from the API result, fallback to leaf if not provided
+      // For healthy plants, we still want to show a plant part for context
+      const plantPart = apiResult.affectedPart && apiResult.affectedPart !== 'none' && apiResult.affectedPart !== 'unknown' 
+        ? apiResult.affectedPart 
+        : (apiResult.disease === 'healthy' ? 'leaf' : this.detectPlantPart(imageFile.name));
 
       // Generate additional results based on the API result
       const diseases = this.generateDiseaseResultsFromAPI(apiResult, plantPart);
@@ -167,9 +170,8 @@ export class EnhancedDiseaseDetector {
     if (name.includes('fruit')) return 'fruit';
     if (name.includes('soil')) return 'soil';
     
-    // Random selection for demo
-    const parts: ('leaf' | 'stem' | 'fruit' | 'soil')[] = ['leaf', 'stem', 'fruit', 'soil'];
-    return parts[Math.floor(Math.random() * parts.length)];
+    // Default to leaf for plant disease detection as most samples are leaf-based
+    return 'leaf';
   }
 
   private generateDiseaseResultsFromAPI(apiResult: any, plantPart: string): DetectionResult[] {
@@ -430,48 +432,94 @@ export class EnhancedDiseaseDetector {
     return recommendations[texture as keyof typeof recommendations] || [];
   }
 
-  private calculateOverallHealth(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult) {
+  private calculateOverallHealth(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult): { 
+    score: number; 
+    status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent'; 
+    recommendations: string[] 
+  } {
     let score = 100;
     const recommendations: string[] = [];
 
-    diseases.forEach(disease => {
-      const deduction = disease.severity === 'high' ? 25 : disease.severity === 'medium' ? 15 : 5;
-      score -= deduction;
-      recommendations.push(`Address ${disease.disease} immediately`);
-    });
+    // Check if the plant is healthy with high confidence
+    const isHealthy = diseases.length === 1 && diseases[0].disease === 'healthy' && diseases[0].confidence > 0.9;
+    
+    if (isHealthy) {
+      // For healthy plants with high confidence, give a high score regardless of other factors
+      score = Math.min(100, 95 + Math.floor(diseases[0].confidence * 5));
+      recommendations.push('Plant is healthy - continue current practices');
+    } else {
+      // For diseased plants or low confidence healthy classification, calculate normally
+      
+      diseases.forEach(disease => {
+        // Don't deduct points for healthy plants
+        if (disease.disease !== 'healthy') {
+          const deduction = disease.severity === 'high' ? 25 : disease.severity === 'medium' ? 15 : 5;
+          score -= deduction;
+          // Only add immediate action recommendation for medium/high severity
+          if (disease.severity === 'high' || disease.severity === 'medium') {
+            recommendations.push(`Address ${disease.disease} immediately`);
+          } else {
+            recommendations.push(`Monitor for ${disease.disease} symptoms`);
+          }
+        } else {
+          // For healthy plants with lower confidence, still add positive recommendation
+          recommendations.push('Plant appears healthy - continue current practices');
+        }
+      });
 
-    pests.forEach(pest => {
-      const deduction = pest.severity === 'high' ? 20 : pest.severity === 'medium' ? 12 : 4;
-      score -= deduction;
-      recommendations.push(`Implement IPM for ${pest.pest}`);
-    });
+      pests.forEach(pest => {
+        const deduction = pest.severity === 'high' ? 20 : pest.severity === 'medium' ? 12 : 4;
+        score -= deduction;
+        recommendations.push(`Implement IPM for ${pest.pest}`);
+      });
 
-    nutrients.forEach(nutrient => {
-      const deduction = nutrient.severity === 'high' ? 15 : nutrient.severity === 'medium' ? 10 : 3;
-      score -= deduction;
-      recommendations.push(`Correct ${nutrient.nutrient}`);
-    });
+      nutrients.forEach(nutrient => {
+        const deduction = nutrient.severity === 'high' ? 15 : nutrient.severity === 'medium' ? 10 : 3;
+        score -= deduction;
+        recommendations.push(`Correct ${nutrient.nutrient}`);
+      });
 
-    if (soil.fertility === 'low') score -= 10;
-    if (soil.drainage === 'poor') score -= 8;
+      if (soil.fertility === 'low') score -= 10;
+      if (soil.drainage === 'poor') score -= 8;
 
-    score = Math.max(0, Math.min(100, score));
+      score = Math.max(0, Math.min(100, score));
+    }
 
-    const status = score >= 90 ? 'excellent' :
-                  score >= 75 ? 'good' :
-                  score >= 60 ? 'fair' :
-                  score >= 40 ? 'poor' : 'critical' as 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+    let status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent' = score >= 95 ? 'excellent' :
+                  score >= 85 ? 'good' :
+                  score >= 70 ? 'fair' :
+                  score >= 50 ? 'poor' : 'critical';
 
-    if (recommendations.length === 0) {
-      recommendations.push('Plant health is excellent - maintain current practices');
+    // Special case for high confidence healthy plants
+    if (isHealthy) {
+      status = score >= 98 ? 'excellent' : 'good';
+      recommendations.splice(0, recommendations.length, 'Plant health is excellent - maintain current practices');
+    } else {
+      // Check if all recommendations are positive (for healthy plants)
+      const hasNegativeRecommendations = recommendations.some(rec => rec.startsWith('Address') || rec.startsWith('Implement') || rec.startsWith('Correct'));
+      const hasMonitoringRecommendations = recommendations.some(rec => rec.startsWith('Monitor for'));
+      
+      if (!hasNegativeRecommendations && !hasMonitoringRecommendations) {
+        // All recommendations are positive, so plant is healthy
+        recommendations.splice(0, recommendations.length, 'Plant health is excellent - maintain current practices');
+      } else if (hasMonitoringRecommendations && !hasNegativeRecommendations) {
+        // Only monitoring recommendations, adjust message accordingly
+        recommendations.splice(0, recommendations.length, ...recommendations.filter(rec => rec.startsWith('Monitor for')), 'Plant health is good - monitor for potential issues');
+      } else {
+        // If there are negative recommendations, adjust the status message to be more realistic
+        if (status === 'excellent' && (hasNegativeRecommendations || hasMonitoringRecommendations)) {
+          status = 'good';
+        }
+      }
     }
 
     return { score, status, recommendations };
   }
 
   private assessImageQuality(): 'poor' | 'fair' | 'good' | 'excellent' {
-    const qualities: ('poor' | 'fair' | 'good' | 'excellent')[] = ['poor', 'fair', 'good', 'excellent'];
-    return qualities[Math.floor(Math.random() * qualities.length)];
+    // For now, default to 'good' quality
+    // In a more advanced implementation, this could analyze image properties
+    return 'good';
   }
 
   async analyzeLeafImage(imageFile: File): Promise<MultiClassResult> {

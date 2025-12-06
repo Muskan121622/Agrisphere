@@ -8,9 +8,9 @@ export const mockChatResponses = {
   ],
   
   disease: [
-    'फसल में रोग की पहचान के लिए, कृपया पत्ती या पौधे की तस्वीर अपलोड करें। मैं रोग की पहचान करके उपचार सुझाऊंगा।',
-    'For disease identification, please upload a clear image of the affected plant part. I can detect diseases with 95% accuracy.',
-    'मैं पत्ती, तना, फल और मिट्टी की तस्वीरों का विश्लेषण कर सकता हूं।'
+    'गेहूं में रोग आ गया है? पत्तियों पर भूरे धब्बे दिख रहे हैं? यह गेहूं का रतुआ रोग हो सकता है। Propiconazole 25% EC का छिड़काव करें। खेत में जल निकासी की व्यवस्था करें।',
+    'फसल में रोग की पहचान के लिए तस्वीर अपलोड करें। मैं रोग की पहचान करके उपचार सुझाऊंगा। तब तक के लिए Mancozeb 75% WP का छिड़काव कर सकते हैं।',
+    'पत्ती, तना, फल या मिट्टी की तस्वीर अपलोड करें। मैं 20+ फसल रोगों की पहचान कर सकता हूं।'
   ],
   
   weather: [
@@ -26,9 +26,9 @@ export const mockChatResponses = {
   ],
   
   irrigation: [
-    'सिंचाई के लिए मिट्टी की नमी जांचें। ड्रिप इरिगेशन से 40% पानी की बचत होती है।',
-    'Check soil moisture before irrigation. Drip irrigation saves 40% water and increases yield.',
-    'फसल की अवस्था के अनुसार पानी दें - फूल आने और दाना भरने के समय अधिक पानी चाहिए।'
+    'पानी देने से पहले मिट्टी की नमी जांचें। अगर नमी 30% से कम है तो सिंचाई करें। ड्रिप इरिगेशन से 40% पानी की बचत होती है।',
+    'मिट्टी की नमी 40% है, इसलिए 2 दिन बाद पानी दें। 25mm सिंचाई के लिए पर्याप्त है।',
+    'फसल की अवस्था के अनुसार पानी दें - फूल आने और दाना भरने के समय अधिक पानी चाहिए। अभी के लिए पानी नहीं चाहिए।'
   ],
   
   market: [
@@ -38,9 +38,9 @@ export const mockChatResponses = {
   ],
   
   default: [
-    'मैं आपकी कृषि संबंधी किसी भी समस्या में मदद कर सकता हूं। रोग, मौसम, खाद, सिंचाई के बारे में पूछें।',
-    'I can help with crop diseases, weather advice, fertilizer recommendations, and market information.',
-    'कृषि तकनीक, सरकारी योजनाओं और नई खेती के तरीकों के बारे में भी जानकारी दे सकता हूं।'
+    'मैं आपकी कृषि संबंधी किसी भी समस्या में मदद कर सकता हूं। रोग, मौसम, खाद, सिंचाई के बारे में पूछें। उदाहरण: "गेहूं में रोग आ गया है", "आज पानी देना चाहिए?", "खाद कितनी डालनी चाहिए?"',
+    'I can help with crop diseases, weather advice, fertilizer recommendations, and market information. Examples: "Wheat has disease", "Should I water today?", "How much fertilizer to apply?"',
+    'कृषि तकनीक, सरकारी योजनाओं और नई खेती के तरीकों के बारे में भी जानकारी दे सकता हूं। मैं हिंदी और अंग्रेजी दोनों में बात कर सकता हूं।'
   ]
 };
 
@@ -98,19 +98,75 @@ export const mockChatWithAI = async (message: string): Promise<string> => {
   
   const lowerMessage = message.toLowerCase();
   
+  // More intelligent response generation based on keywords
   if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('नमस्ते')) {
     return getRandomResponse('greetings');
-  } else if (lowerMessage.includes('disease') || lowerMessage.includes('रोग') || lowerMessage.includes('बीमारी')) {
-    return getRandomResponse('disease');
-  } else if (lowerMessage.includes('weather') || lowerMessage.includes('मौसम') || lowerMessage.includes('बारिश')) {
-    return getRandomResponse('weather');
-  } else if (lowerMessage.includes('fertilizer') || lowerMessage.includes('खाद') || lowerMessage.includes('उर्वरक')) {
-    return getRandomResponse('fertilizer');
-  } else if (lowerMessage.includes('water') || lowerMessage.includes('irrigation') || lowerMessage.includes('पानी') || lowerMessage.includes('सिंचाई')) {
-    return getRandomResponse('irrigation');
-  } else if (lowerMessage.includes('market') || lowerMessage.includes('price') || lowerMessage.includes('बाजार') || lowerMessage.includes('कीमत')) {
-    return getRandomResponse('market');
-  } else {
-    return getRandomResponse('default');
+  } 
+  
+  // Disease related queries
+  if (lowerMessage.includes('disease') || lowerMessage.includes('रोग') || lowerMessage.includes('बीमारी') || 
+      lowerMessage.includes('sick') || lowerMessage.includes('ill') || lowerMessage.includes('problem') ||
+      lowerMessage.includes('issue') || lowerMessage.includes('affected')) {
+    
+    // Specific crop diseases
+    if (lowerMessage.includes('wheat') || lowerMessage.includes('गेहूं')) {
+      return 'गेहूं में रोग आ गया है? पत्तियों पर भूरे धब्बे दिख रहे हैं? यह गेहूं का रतुआ रोग हो सकता है। Propiconazole 25% EC का छिड़काव करें। खेत में जल निकासी की व्यवस्था करें।';
+    } else if (lowerMessage.includes('tomato') || lowerMessage.includes('टमाटर')) {
+      return 'टमाटर में समस्या है? पत्तियों पर पीले धब्बे दिख रहे हैं? यह टमाटर का झुलसा रोग हो सकता है। Mancozeb 75% WP का छिड़काव करें। पौधों के बीच उचित दूरी रखें।';
+    } else if (lowerMessage.includes('rice') || lowerMessage.includes('चावल') || lowerMessage.includes('धान')) {
+      return 'धान में समस्या है? पत्तियों पर भूरे धब्बे दिख रहे हैं? यह धान का भूरा रोग हो सकता है। Carbendazim 50% SC का छिड़काव करें। खेत में पानी की व्यवस्था ठीक रखें।';
+    } else {
+      return 'फसल में रोग की पहचान के लिए तस्वीर अपलोड करें। मैं रोग की पहचान करके उपचार सुझाऊंगा। तब तक के लिए Mancozeb 75% WP का छिड़काव कर सकते हैं।';
+    }
   }
+  
+  // Weather/Irrigation related queries
+  if (lowerMessage.includes('water') || lowerMessage.includes('irrigation') || lowerMessage.includes('पानी') || 
+      lowerMessage.includes('सिंचाई') || lowerMessage.includes('rain') || lowerMessage.includes('बारिश') ||
+      lowerMessage.includes('weather') || lowerMessage.includes('मौसम')) {
+    
+    // Specific watering queries
+    if (lowerMessage.includes('today') || lowerMessage.includes('आज')) {
+      return 'मिट्टी की नमी 40% है, इसलिए 2 दिन बाद पानी दें। 25mm सिंचाई के लिए पर्याप्त है।';
+    } else if (lowerMessage.includes('when') || lowerMessage.includes('कब')) {
+      return 'फसल की अवस्था के अनुसार पानी दें - फूल आने और दाना भरने के समय अधिक पानी चाहिए। अभी के लिए पानी नहीं चाहिए।';
+    } else {
+      return 'पानी देने से पहले मिट्टी की नमी जांचें। अगर नमी 30% से कम है तो सिंचाई करें। ड्रिप इरिगेशन से 40% पानी की बचत होती है।';
+    }
+  }
+  
+  // Fertilizer/Nutrition related queries
+  if (lowerMessage.includes('fertilizer') || lowerMessage.includes('खाद') || lowerMessage.includes('उर्वरक') ||
+      lowerMessage.includes('nutrient') || lowerMessage.includes('पोषक') || lowerMessage.includes('नाइट्रोजन') ||
+      lowerMessage.includes('phosphorus') || lowerMessage.includes('फास्फोरस') || lowerMessage.includes('potash') ||
+      lowerMessage.includes('पोटाश')) {
+    
+    if (lowerMessage.includes('how much') || lowerMessage.includes('कितनी')) {
+      return 'खाद की मात्रा: गेहूं के लिए NPK 120:60:40 किग्रा/हेक्टेयर। यूरिया 265 किग्रा, SSP 375 किग्रा, MOP 165 किग्रा प्रति हेक्टेयर।';
+    } else {
+      return 'खाद और उर्वरक के लिए: नाइट्रोजन, फास्फोरस, पोटाश की मात्रा मिट्टी परीक्षण के आधार पर तय करें। जैविक खाद का उपयोग करें - गोबर की खाद, कंपोस्ट, वर्मी कंपोस्ट बेहतर विकल्प हैं।';
+    }
+  }
+  
+  // Harvest related queries
+  if (lowerMessage.includes('harvest') || lowerMessage.includes('काटन') || lowerMessage.includes('cut') ||
+      lowerMessage.includes('reap') || lowerMessage.includes('collect')) {
+    
+    if (lowerMessage.includes('wheat') || lowerMessage.includes('गेहूं')) {
+      return 'गेहूं काटने का समय: जब दाने सुनहरे हो जाएं और मिट्टी की नमी 12-14% हो। सुबह या शाम के समय काटें।';
+    } else if (lowerMessage.includes('rice') || lowerMessage.includes('चावल') || lowerMessage.includes('धान')) {
+      return 'धान काटने का समय: जब 85% दाने पक जाएं और पत्ते पीले हो जाएं। मिट्टी की नमी 18-22% होनी चाहिए।';
+    } else {
+      return 'फसल काटने का समय: जब दाने पक जाएं और मिट्टी की नमी उचित हो। सुबह या शाम के समय काटें।';
+    }
+  }
+  
+  // Market/Price related queries
+  if (lowerMessage.includes('market') || lowerMessage.includes('price') || lowerMessage.includes('बाजार') || 
+      lowerMessage.includes('कीमत') || lowerMessage.includes('sell') || lowerMessage.includes('बेचना')) {
+    return 'बाजार की कीमत जानने के लिए eNAM पोर्टल देखें। सीधे खरीदारों से संपर्क करके बेहतर दाम मिल सकते हैं। फसल की गुणवत्ता बनाए रखें और सही समय पर बेचें।';
+  }
+  
+  // Default response for general queries
+  return getRandomResponse('default');
 };

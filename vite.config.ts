@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: false,
     hmr: {
       overlay: false,
-    },
+    }
   },
   plugins: [react()],
   resolve: {

@@ -8,9 +8,14 @@ import tempfile
 import json
 from PIL import Image
 from scipy import ndimage
+from datetime import datetime
+from improved_voice_assistant import AgriVoiceAssistant
 
 app = Flask(__name__)
 CORS(app)
+
+# Initialize voice assistant
+voice_assistant = AgriVoiceAssistant()
 
 # Lazy loading for yield models (load only when needed)
 yield_models_loaded = False
@@ -22,16 +27,29 @@ feature_columns = None
 def load_yield_models():
     """Lazy load yield models only when first requested"""
     global yield_models_loaded, model, scalers, encoders, feature_columns
+    print(f"load_yield_models called. Current state - yield_models_loaded: {yield_models_loaded}")
     if not yield_models_loaded:
         try:
+            print("Attempting to load yield prediction models...")
+            print("Loading model...")
             model = joblib.load('models/yield_prediction_model.pkl')
+            print("Model loaded successfully")
+            print("Loading scalers...")
             scalers = joblib.load('models/scalers.pkl')
+            print("Scalers loaded successfully")
+            print("Loading encoders...")
             encoders = joblib.load('models/encoders.pkl')
+            print("Encoders loaded successfully")
+            print("Loading feature columns...")
             feature_columns = joblib.load('models/feature_columns.pkl')
+            print("Feature columns loaded successfully")
             yield_models_loaded = True
             print("Yield prediction models loaded successfully")
         except Exception as e:
             print(f"Yield prediction models not available: {e}")
+            import traceback
+            traceback.print_exc()
+    print(f"load_yield_models returning: {yield_models_loaded}")
     return yield_models_loaded
 
 def predict_disease(image_path, model_path="sklearn_model_output/model.pkl", labels_path="sklearn_model_output/labels.json"):
@@ -131,24 +149,35 @@ def predict_disease(image_path, model_path="sklearn_model_output/model.pkl", lab
 
 @app.route('/predict', methods=['POST'])
 def predict_yield():
-    if not load_yield_models():
+    print("Attempting to load yield models...")
+    models_loaded = load_yield_models()
+    print(f"Models loaded: {models_loaded}")
+    if not models_loaded:
+        print("Returning 503 error: Yield prediction models not available")
         return jsonify({'error': 'Yield prediction models not available'}), 503
 
     try:
         data = request.json
 
         # Create input dataframe
+        # Use the same year normalization approach as in training
+        # Based on the dataset range (2010 to 2023)
+        year_min, year_max = 2010, 2023
+        
+        # Get historical average for better estimates
+        hist_avg = get_historical_average(data['crop'], data['district'])
+        
         input_data = pd.DataFrame([{
-            'year_normalized': (data['year'] - 2010) / (2023 - 2010),
+            'year_normalized': (data['year'] - year_min) / (year_max - year_min),
             'crop_encoded': encoders['crop'].transform([data['crop']])[0],
             'district_encoded': encoders['district'].transform([data['district']])[0],
             'season_encoded': encoders['season'].transform([data['season']])[0],
             'area_hectares': data['area_hectares'],
-            'production_tonnes': data.get('production_tonnes', data['area_hectares'] * 3000),  # Estimate
+            'production_tonnes': data.get('production_tonnes', data['area_hectares'] * (hist_avg / 1000)),  # Convert kg to tonnes
             'area_log': np.log1p(data['area_hectares']),
-            'production_log': np.log1p(data.get('production_tonnes', data['area_hectares'] * 3000)),
-            'yield_trend_3yr': data.get('yield_trend_3yr', 3000),  # Default estimate
-            'yield_trend_5yr': data.get('yield_trend_5yr', 3000)   # Default estimate
+            'production_log': np.log1p(data.get('production_tonnes', data['area_hectares'] * (hist_avg / 1000))),
+            'yield_trend_3yr': data.get('yield_trend_3yr', hist_avg),
+            'yield_trend_5yr': data.get('yield_trend_5yr', hist_avg)
         }])
 
         # Make prediction
@@ -171,13 +200,21 @@ def predict_yield():
 
 @app.route('/crops', methods=['GET'])
 def get_crops():
-    if not load_yield_models():
+    print("Attempting to load yield models for /crops...")
+    models_loaded = load_yield_models()
+    print(f"Models loaded for /crops: {models_loaded}")
+    if not models_loaded:
+        print("Returning 503 error for /crops: Yield prediction models not available")
         return jsonify({'error': 'Yield prediction models not available'}), 503
     return jsonify(encoders['crop'].classes_.tolist())
 
 @app.route('/districts', methods=['GET'])
 def get_districts():
-    if not load_yield_models():
+    print("Attempting to load yield models for /districts...")
+    models_loaded = load_yield_models()
+    print(f"Models loaded for /districts: {models_loaded}")
+    if not models_loaded:
+        print("Returning 503 error for /districts: Yield prediction models not available")
         return jsonify({'error': 'Yield prediction models not available'}), 503
     return jsonify(encoders['district'].classes_.tolist())
 
@@ -292,13 +329,56 @@ def get_economic_impact(disease):
     }
     return impacts.get(disease, 'Economic impact varies')
 
+@app.route('/voice-query', methods=['POST'])
+def handle_voice_query():
+    """Handle voice assistant queries"""
+    try:
+        data = request.json
+        query_text = data.get('text', '')
+        
+        if not query_text:
+            return jsonify({'error': 'No query text provided'}), 400
+        
+        # Process query with voice assistant
+        response = voice_assistant.process_voice_input(query_text)
+        
+        return jsonify({
+            'success': True,
+            'response': response,
+            'timestamp': str(datetime.now())
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/voice-examples', methods=['GET'])
+def get_voice_examples():
+    """Get example voice queries"""
+    examples = {
+        'hindi': [
+            "गेहूं में रोग आ गया है, क्या करें?",
+            "आज पानी देना चाहिए?", 
+            "फसल कब काटनी चाहिए?",
+            "खाद कितनी डालनी चाहिए?"
+        ],
+        'english': [
+            "Wheat has disease, what to do?",
+            "Should I water today?",
+            "When should I harvest?",
+            "How much fertilizer to apply?"
+        ]
+    }
+    return jsonify(examples)
+
 if __name__ == '__main__':
     print("\n" + "="*50)
-    print("🚀 AgriSphere AI API Server Starting...")
+    print("AgriSphere AI API Server Starting...")
     print("="*50)
-    print("📡 Server will be available at: http://localhost:8080")
-    print("🏥 Health check: http://localhost:8080/health")
-    print("🌿 Disease detection: POST to /detect-disease")
-    print("📊 Yield prediction: POST to /predict")
+    print("Server will be available at: http://localhost:5000")
+    print("Health check: http://localhost:5000/health")
+    print("Disease detection: POST to /detect-disease")
+    print("Yield prediction: POST to /predict")
+    print("Voice assistant: POST to /voice-query")
+    print("Voice examples: GET /voice-examples")
     print("="*50 + "\n")
-    app.run(debug=True, port=8080, threaded=True)
+    app.run(debug=True, port=5000, threaded=True)

@@ -13,7 +13,9 @@ const VoiceRecognition = () => {
   const [hindiResponse, setHindiResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('hi-IN');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognition = useRef<any>(null);
+  const utteranceRef = useRef<any>(null);
 
   const languages = [
     { code: 'hi-IN', name: 'Hindi', flag: '🇮🇳' },
@@ -43,29 +45,33 @@ const VoiceRecognition = () => {
         }
 
         try {
-          // Try OpenAI first, fallback to mock
-          let aiResponse: string;
+          // Use improved voice assistant backend
+          const response = await fetch('http://localhost:5000/voice-query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: spokenText })
+          });
+          
+          let aiResponse = '';
           let hindiTranslation = '';
           
-          try {
-            aiResponse = await chatWithAI(spokenText, 'general');
-            // Translate to Hindi if not already in Hindi
-            if (selectedLanguage !== 'hi-IN') {
-              hindiTranslation = await translateToHindi(aiResponse);
-            } else {
-              hindiTranslation = aiResponse;
-            }
-          } catch (openaiError) {
-            console.log('OpenAI failed, using mock AI:', openaiError);
+          if (response.ok) {
+            const data = await response.json();
+            aiResponse = data.response.text;
+            hindiTranslation = data.response.audio_text;
+          } else {
+            // Fallback to mock AI
             aiResponse = await mockChatWithAI(spokenText);
-            hindiTranslation = aiResponse; // Mock already includes Hindi
+            hindiTranslation = aiResponse;
           }
           
           setResponse(aiResponse);
           setHindiResponse(hindiTranslation);
 
           // Speak the response
-          speakResponse(selectedLanguage === 'hi-IN' ? aiResponse : hindiTranslation);
+          speakResponse(selectedLanguage === 'hi-IN' ? hindiTranslation : aiResponse);
         } catch (error) {
           console.error('Voice processing error:', error);
           setResponse('Sorry, I encountered an error processing your request.');
@@ -122,9 +128,45 @@ const VoiceRecognition = () => {
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel(); // Stop any ongoing speech
       const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
       utterance.lang = selectedLanguage;
       utterance.rate = 0.8;
+      
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        utteranceRef.current = null;
+      };
+      
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        utteranceRef.current = null;
+      };
+      
       speechSynthesis.speak(utterance);
+    }
+  };
+  
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window && isSpeaking) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+      utteranceRef.current = null;
+    }
+  };
+  
+  const pauseResumeSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      if (isSpeaking) {
+        if (speechSynthesis.speaking && !speechSynthesis.paused) {
+          speechSynthesis.pause();
+        } else {
+          speechSynthesis.resume();
+        }
+      }
     }
   };
 
@@ -217,13 +259,34 @@ const VoiceRecognition = () => {
                 <h4 className="font-semibold flex items-center gap-2">
                   🤖 AgriSphere AI का जवाब / Response:
                 </h4>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => speakResponse(hindiResponse || response)}
-                >
-                  <Volume2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-2">
+                  {isSpeaking ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={pauseResumeSpeaking}
+                      >
+                        {speechSynthesis.paused ? '▶️' : '⏸️'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={stopSpeaking}
+                      >
+                        ⏹️
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => speakResponse(hindiResponse || response)}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 {hindiResponse && (
@@ -243,45 +306,76 @@ const VoiceRecognition = () => {
         <h4 className="font-semibold mb-3">उदाहरण प्रश्न / Example Questions:</h4>
         <div className="grid gap-2">
           {exampleQuestions.map((q, i) => (
-            <Button
-              key={i}
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setTranscript(q.hindi);
-                // Simulate voice processing
-                setIsProcessing(true);
-                setTimeout(async () => {
-                  try {
-                    let aiResponse: string;
-                    let hindiTranslation = '';
-                    
+            <div key={i} className="space-y-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setTranscript(q.hindi);
+                  // Simulate voice processing
+                  setIsProcessing(true);
+                  setTimeout(async () => {
                     try {
-                      aiResponse = await chatWithAI(q.hindi, 'general');
-                      hindiTranslation = await translateToHindi(aiResponse);
-                    } catch (openaiError) {
-                      aiResponse = await mockChatWithAI(q.hindi);
-                      hindiTranslation = aiResponse;
+                      // Use improved voice assistant backend
+                      const response = await fetch('http://localhost:5000/voice-query', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ text: q.hindi })
+                      });
+                      
+                      let aiResponse = '';
+                      let hindiTranslation = '';
+                      
+                      if (response.ok) {
+                        const data = await response.json();
+                        aiResponse = data.response.text;
+                        hindiTranslation = data.response.audio_text;
+                      } else {
+                        // Fallback to mock AI
+                        aiResponse = await mockChatWithAI(q.hindi);
+                        hindiTranslation = aiResponse;
+                      }
+                      
+                      setResponse(aiResponse);
+                      setHindiResponse(hindiTranslation);
+                      speakResponse(hindiTranslation);
+                    } catch (error) {
+                      console.error('Voice query error:', error);
+                      setResponse('Sorry, I encountered an error.');
+                      setHindiResponse('क्षमा करें, मुझे त्रुटि हुई।');
+                    } finally {
+                      setIsProcessing(false);
                     }
-                    
-                    setResponse(aiResponse);
-                    setHindiResponse(hindiTranslation);
-                    speakResponse(hindiTranslation);
-                  } catch (error) {
-                    setResponse('Sorry, I encountered an error.');
-                    setHindiResponse('क्षमा करें, मुझे त्रुटि हुई।');
-                  } finally {
-                    setIsProcessing(false);
-                  }
-                }, 1000);
-              }}
-              className="text-left justify-start h-auto p-3"
-            >
-              <div>
-                <p className="font-medium">{q.hindi}</p>
-                <p className="text-xs text-muted-foreground">{q.english}</p>
-              </div>
-            </Button>
+                  }, 1000);
+                }}
+                className="text-left justify-start h-auto p-3 w-full"
+              >
+                <div className="flex-1">
+                  <p className="font-medium">{q.hindi}</p>
+                  <p className="text-xs text-muted-foreground">{q.english}</p>
+                </div>
+              </Button>
+              {isSpeaking && (
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={pauseResumeSpeaking}
+                  >
+                    {speechSynthesis.paused ? '▶️' : '⏸️'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={stopSpeaking}
+                  >
+                    ⏹️
+                  </Button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </Card>
