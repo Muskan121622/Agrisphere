@@ -28,7 +28,7 @@ enhanced_dataset/
 enhanced_model_output/
 high_accuracy_model/
 model_output/
-models/
+
 *.jpg
 *.jpeg
 *.JPG
