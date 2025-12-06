@@ -33,7 +33,6 @@ models/
 *.jpeg
 *.JPG
 *.h5
-*.pkl
 
 .env
 .env.example
