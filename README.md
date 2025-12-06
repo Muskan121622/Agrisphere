@@ -152,6 +152,12 @@ simple_requirements.txt
 ```
 
 ---
+Start the python development server
+```bash
+python api_server.py
+```
+
+---
 
 ## 📚 Usage Guide
 
