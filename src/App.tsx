@@ -19,6 +19,9 @@ const ComprehensiveDashboard = lazy(() => import("./pages/ComprehensiveDashboard
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./components/Login"));
 const Signup = lazy(() => import("./components/Signup"));
+const FertilizerRecommendation = lazy(() => import("./pages/FertilizerRecommendation"));
+
+const PestPrediction = lazy(() => import("./pages/PestPrediction"));
 
 const queryClient = new QueryClient();
 
@@ -79,6 +82,8 @@ const App = () => {
               <Route path="/iot-monitoring" element={<ProtectedRoute><IoTMonitoring /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/voice-assistant" element={<ProtectedRoute><VoiceAssistant /></ProtectedRoute>} />
+              <Route path="/fertilizer-recommendation" element={<ProtectedRoute><FertilizerRecommendation /></ProtectedRoute>} />
+              <Route path="/pest-prediction" element={<ProtectedRoute><PestPrediction /></ProtectedRoute>} />
               <Route path="/comprehensive-dashboard" element={<ProtectedRoute><ComprehensiveDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

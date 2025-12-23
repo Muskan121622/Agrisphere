@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Brain, Map, TrendingUp, Leaf, Bug, Droplets, 
+import {
+  Brain, Map, TrendingUp, Leaf, Bug, Droplets,
   Activity, BarChart3, MapPin, Zap, Target,
   AlertTriangle, CheckCircle, ArrowLeft
 } from "lucide-react";
@@ -13,6 +13,8 @@ import EnhancedImageAnalysis from "@/components/EnhancedImageAnalysis";
 import { GISDigitalTwin } from "@/lib/gis-digital-twin";
 import { yieldPredictor } from "@/lib/yield-prediction";
 import { weatherIntegration } from "@/lib/advanced-weather-integration";
+import PestPrediction from "./PestPrediction";
+import Marketplace from "./Marketplace";
 
 const ComprehensiveDashboard = () => {
   const [gisEngine] = useState(() => new GISDigitalTwin());
@@ -27,7 +29,7 @@ const ComprehensiveDashboard = () => {
 
   const initializeDashboard = async () => {
     setIsLoading(true);
-    
+
     try {
       // Initialize demo farm
       const demoCoordinates = [
@@ -36,7 +38,7 @@ const ComprehensiveDashboard = () => {
         { lat: 26.1450, lng: 91.7370 },
         { lat: 26.1450, lng: 91.7360 }
       ];
-      
+
       const farm = await gisEngine.initializeFarm('AgriSphere Demo Farm', 'Demo User', demoCoordinates);
       setFarmData(farm);
 
@@ -51,7 +53,7 @@ const ComprehensiveDashboard = () => {
           year: 2025
         }))
       );
-      
+
       setYieldPredictions(crops.map((crop, i) => ({ crop, ...predictions[i] })));
 
       // Load weather data
@@ -72,9 +74,9 @@ const ComprehensiveDashboard = () => {
       maize: { good: 4000, fair: 3000 },
       sugarcane: { good: 60000, fair: 45000 }
     };
-    
+
     const threshold = thresholds[crop as keyof typeof thresholds] || { good: 3000, fair: 2000 };
-    
+
     if (yield_value >= threshold.good) return 'text-green-600';
     if (yield_value >= threshold.fair) return 'text-yellow-600';
     return 'text-red-600';
@@ -111,7 +113,7 @@ const ComprehensiveDashboard = () => {
               Comprehensive AI Agriculture Dashboard
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Advanced AI-powered agriculture management system combining disease detection, 
+              Advanced AI-powered agriculture management system combining disease detection,
               GIS digital twin, and yield prediction for precision farming.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
@@ -136,7 +138,7 @@ const ComprehensiveDashboard = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsList className="grid w-full grid-cols-6 mb-8">
               <TabsTrigger value="overview">
                 <Activity className="w-4 h-4 mr-2" />
                 Overview
@@ -152,6 +154,14 @@ const ComprehensiveDashboard = () => {
               <TabsTrigger value="yield-prediction">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Yield Prediction
+              </TabsTrigger>
+              <TabsTrigger value="pest-prediction">
+                <Bug className="w-4 h-4 mr-2" />
+                Pest Forecast
+              </TabsTrigger>
+              <TabsTrigger value="marketplace">
+                <Sprout className="w-4 h-4 mr-2" />
+                Marketplace
               </TabsTrigger>
             </TabsList>
 
@@ -277,7 +287,7 @@ const ComprehensiveDashboard = () => {
                       <div key={idx} className="text-center p-4 bg-muted/30 rounded-lg">
                         <h4 className="font-medium capitalize mb-2">{pred.crop}</h4>
                         <div className={`text-2xl font-bold ${getYieldColor(pred.predicted_yield, pred.crop)}`}>
-                          {pred.crop === 'sugarcane' 
+                          {pred.crop === 'sugarcane'
                             ? (pred.predicted_yield / 1000).toFixed(1) + 't'
                             : (pred.predicted_yield / 1000).toFixed(2) + 't'
                           }
@@ -296,7 +306,7 @@ const ComprehensiveDashboard = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold mb-4">AI-Powered Multi-Class Disease Detection</h2>
                   <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Advanced AI system for detecting diseases, pests, nutrient deficiencies, and soil analysis 
+                    Advanced AI system for detecting diseases, pests, nutrient deficiencies, and soil analysis
                     from leaf, stem, fruit, and soil images with 95%+ accuracy.
                   </p>
                 </div>
@@ -310,7 +320,7 @@ const ComprehensiveDashboard = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold mb-4">GIS-Based Smart Farm Digital Twin</h2>
                   <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Comprehensive digital replica of your farm with advanced spatial analysis, 
+                    Comprehensive digital replica of your farm with advanced spatial analysis,
                     multi-layer GIS mapping, and precision agriculture insights.
                   </p>
                 </div>
@@ -348,7 +358,7 @@ const ComprehensiveDashboard = () => {
                       <Activity className="w-8 h-8 mx-auto mb-3 text-purple-500" />
                       <h3 className="font-bold mb-2">Crop Health</h3>
                       <div className="text-2xl font-bold text-purple-500">
-                        {farmData.cropGrowthZones?.length > 0 
+                        {farmData.cropGrowthZones?.length > 0
                           ? Math.round(farmData.cropGrowthZones.reduce((sum, zone) => sum + zone.health, 0) / farmData.cropGrowthZones.length)
                           : 0
                         }%
@@ -426,7 +436,7 @@ const ComprehensiveDashboard = () => {
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold mb-4">Advanced AI Yield Prediction</h2>
                   <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Machine learning models using Random Forest, LSTM, and Gradient Boosting 
+                    Machine learning models using Random Forest, LSTM, and Gradient Boosting
                     for accurate crop yield predictions with weather and soil integration.
                   </p>
                 </div>
@@ -441,7 +451,7 @@ const ComprehensiveDashboard = () => {
                             <p className="text-muted-foreground">Kharif Season 2025</p>
                           </div>
                           <Badge className="bg-primary text-white">
-                            {pred.crop === 'sugarcane' 
+                            {pred.crop === 'sugarcane'
                               ? (pred.predicted_yield / 1000).toFixed(1) + ' tons/ha'
                               : (pred.predicted_yield / 1000).toFixed(2) + ' tons/ha'
                             }
@@ -463,10 +473,9 @@ const ComprehensiveDashboard = () => {
                           </div>
                           <div className="flex justify-between">
                             <span>Trend:</span>
-                            <Badge className={`${
-                              pred.historical_comparison.trend === 'increasing' ? 'bg-green-500' :
+                            <Badge className={`${pred.historical_comparison.trend === 'increasing' ? 'bg-green-500' :
                               pred.historical_comparison.trend === 'decreasing' ? 'bg-red-500' : 'bg-yellow-500'
-                            } text-white capitalize`}>
+                              } text-white capitalize`}>
                               {pred.historical_comparison.trend}
                             </Badge>
                           </div>
@@ -524,6 +533,17 @@ const ComprehensiveDashboard = () => {
                   </div>
                 </Card>
               </div>
+            </TabsContent>
+
+
+            {/* Pest Prediction Tab */}
+            <TabsContent value="pest-prediction">
+              <PestPrediction />
+            </TabsContent>
+
+            {/* Marketplace Tab */}
+            <TabsContent value="marketplace">
+              <Marketplace />
             </TabsContent>
           </Tabs>
         </div>

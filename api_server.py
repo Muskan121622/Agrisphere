@@ -10,6 +10,9 @@ from PIL import Image
 from scipy import ndimage
 from datetime import datetime
 from improved_voice_assistant import AgriVoiceAssistant
+import recommendation_engine
+import pest_engine
+import market_engine
 
 app = Flask(__name__)
 CORS(app)
@@ -51,6 +54,36 @@ def load_yield_models():
             traceback.print_exc()
     print(f"load_yield_models returning: {yield_models_loaded}")
     return yield_models_loaded
+
+def predict_disease_archive4(image_path, model_path="archive4_model_output/model.h5", labels_path="archive4_model_output/labels.json"):
+    """Predict plant disease using Archive4 TensorFlow model"""
+    try:
+        import tensorflow as tf
+        
+        # Load model and labels
+        model = tf.keras.models.load_model(model_path)
+        with open(labels_path, 'r') as f:
+            class_mapping = json.load(f)
+        
+        # Preprocess image
+        img = Image.open(image_path)
+        img = img.convert('RGB')
+        img = img.resize((224, 224))
+        img_array = np.array(img) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        
+        # Predict
+        predictions = model.predict(img_array, verbose=0)
+        predicted_class_idx = np.argmax(predictions[0])
+        confidence = predictions[0][predicted_class_idx]
+        
+        # Get class name
+        predicted_class = class_mapping[str(predicted_class_idx)]
+        
+        return predicted_class, confidence
+    except Exception as e:
+        print(f"Archive4 model prediction error: {e}")
+        return None, None
 
 def predict_disease(image_path, model_path="sklearn_model_output/model.pkl", labels_path="sklearn_model_output/labels.json"):
     """
@@ -238,7 +271,24 @@ def detect_disease():
             temp_path = temp_file.name
 
         try:
-            # Use the trained model to predict disease
+            # Try Archive4 model first (TensorFlow)
+            if os.path.exists('archive4_model_output/model.h5'):
+                predicted_class, confidence = predict_disease_archive4(temp_path)
+                if predicted_class:
+                    result = {
+                        'disease': predicted_class,
+                        'confidence': float(confidence),
+                        'severity': 'high' if confidence > 0.8 else 'medium' if confidence > 0.6 else 'low',
+                        'treatment': get_treatment_recommendation(predicted_class),
+                        'affectedPart': get_affected_part(predicted_class),
+                        'symptoms': get_symptoms(predicted_class),
+                        'preventiveMeasures': get_preventive_measures(predicted_class),
+                        'economicImpact': get_economic_impact(predicted_class),
+                        'model': 'archive4_tensorflow'
+                    }
+                    return jsonify(result)
+            
+            # Fallback to sklearn model
             predicted_class, confidence = predict_disease(
                 temp_path,
                 model_path='sklearn_model_output/model.pkl',
@@ -257,7 +307,8 @@ def detect_disease():
                 'affectedPart': get_affected_part(predicted_class),
                 'symptoms': get_symptoms(predicted_class),
                 'preventiveMeasures': get_preventive_measures(predicted_class),
-                'economicImpact': get_economic_impact(predicted_class)
+                'economicImpact': get_economic_impact(predicted_class),
+                'model': 'sklearn'
             }
 
             return jsonify(result)
@@ -277,7 +328,13 @@ def get_treatment_recommendation(disease):
         'leaf_spot': 'Apply fungicide spray, ensure proper plant spacing',
         'nutrient_deficiency': 'Apply appropriate fertilizer based on soil test',
         'pest_infected': 'Use integrated pest management - beneficial insects and organic sprays',
-        'stem_rot': 'Remove infected plants, apply fungicide to healthy plants'
+        'stem_rot': 'Remove infected plants, apply fungicide to healthy plants',
+        'rot': 'Remove infected parts, improve drainage, apply fungicide',
+        'viral_disease': 'Remove infected plants, control insect vectors, use resistant varieties',
+        'powdery_mildew': 'Apply sulfur-based fungicide, improve air circulation',
+        'scab': 'Apply fungicide spray, remove fallen leaves, prune for air circulation',
+        'anthracnose': 'Apply copper fungicide, remove infected debris, avoid overhead watering',
+        'downy_mildew': 'Apply systemic fungicide, reduce humidity, improve drainage'
     }
     return treatments.get(disease, 'Consult agricultural expert')
 
@@ -289,7 +346,13 @@ def get_affected_part(disease):
         'leaf_spot': 'leaf',
         'nutrient_deficiency': 'whole_plant',
         'pest_infected': 'multiple',
-        'stem_rot': 'stem'
+        'stem_rot': 'stem',
+        'rot': 'fruit_stem',
+        'viral_disease': 'whole_plant',
+        'powdery_mildew': 'leaf',
+        'scab': 'fruit_leaf',
+        'anthracnose': 'fruit_leaf',
+        'downy_mildew': 'leaf'
     }
     return parts.get(disease, 'unknown')
 
@@ -301,7 +364,13 @@ def get_symptoms(disease):
         'leaf_spot': ['Circular spots on leaves', 'Spots may have dark borders'],
         'nutrient_deficiency': ['Yellowing of older leaves', 'Stunted growth', 'Poor fruit development'],
         'pest_infected': ['Holes in leaves', 'Sticky residue', 'Distorted growth'],
-        'stem_rot': ['Dark, water-soaked lesions on stem', 'Soft, mushy tissue']
+        'stem_rot': ['Dark, water-soaked lesions on stem', 'Soft, mushy tissue'],
+        'rot': ['Soft, decaying tissue', 'Foul odor', 'Discoloration'],
+        'viral_disease': ['Mosaic patterns on leaves', 'Stunted growth', 'Leaf curling', 'Yellow streaks'],
+        'powdery_mildew': ['White powdery coating on leaves', 'Distorted leaves', 'Reduced growth'],
+        'scab': ['Dark, rough lesions on fruit', 'Corky spots on leaves'],
+        'anthracnose': ['Dark sunken lesions', 'Fruit rot', 'Leaf spots with dark margins'],
+        'downy_mildew': ['Yellow patches on upper leaf surface', 'Gray fuzzy growth on undersides']
     }
     return symptoms.get(disease, ['Symptoms not specified'])
 
@@ -313,7 +382,13 @@ def get_preventive_measures(disease):
         'leaf_spot': ['Avoid overhead watering', 'Ensure proper plant spacing', 'Remove infected leaves'],
         'nutrient_deficiency': ['Regular soil testing', 'Balanced fertilization', 'Proper irrigation'],
         'pest_infected': ['Crop rotation', 'Beneficial insects', 'Regular monitoring'],
-        'stem_rot': ['Improve drainage', 'Avoid overwatering', 'Use pathogen-free seeds']
+        'stem_rot': ['Improve drainage', 'Avoid overwatering', 'Use pathogen-free seeds'],
+        'rot': ['Proper storage conditions', 'Avoid mechanical damage', 'Good sanitation'],
+        'viral_disease': ['Control insect vectors', 'Use virus-free planting material', 'Remove infected plants'],
+        'powdery_mildew': ['Reduce humidity', 'Improve air circulation', 'Avoid dense planting'],
+        'scab': ['Remove fallen leaves', 'Prune for air flow', 'Apply preventive fungicides'],
+        'anthracnose': ['Crop rotation', 'Remove plant debris', 'Avoid overhead irrigation'],
+        'downy_mildew': ['Improve drainage', 'Reduce leaf wetness', 'Use resistant varieties']
     }
     return measures.get(disease, ['Follow good agricultural practices'])
 
@@ -325,7 +400,13 @@ def get_economic_impact(disease):
         'leaf_spot': 'Yield reduction of 10-25% depending on severity',
         'nutrient_deficiency': 'Reduced yield and quality, increased input costs',
         'pest_infected': 'Yield loss varies by pest type and infestation level',
-        'stem_rot': 'Complete plant loss in severe infections'
+        'stem_rot': 'Complete plant loss in severe infections',
+        'rot': 'Post-harvest losses of 30-50%, reduced market value',
+        'viral_disease': 'Severe yield loss 40-100%, no cure available',
+        'powdery_mildew': 'Yield reduction of 10-30%, quality degradation',
+        'scab': 'Reduced fruit quality and marketability, 20-40% loss',
+        'anthracnose': 'Significant fruit losses 30-60%, quality issues',
+        'downy_mildew': 'Yield loss of 20-50% in favorable conditions'
     }
     return impacts.get(disease, 'Economic impact varies')
 
@@ -370,6 +451,68 @@ def get_voice_examples():
     }
     return jsonify(examples)
 
+@app.route('/recommend-fertilizer', methods=['POST'])
+def recommend_fertilizer():
+    """
+    Get fertilizer and irrigation recommendations based on crop and environmental data.
+    """
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No input data provided'}), 400
+            
+        # Log the request for debugging
+        print(f"Recommendation Request: {data}")
+        
+        # Get recommendation from engine
+        recommendation = recommendation_engine.engine_run(data)
+        
+        return jsonify(recommendation)
+        
+    except Exception as e:
+        print(f"Recommendation Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/predict-pest', methods=['POST'])
+def predict_pest():
+    """
+    Get pest risk prediction based on weather data.
+    """
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No input data provided'}), 400
+            
+        # Log request
+        print(f"Pest Prediction Request: {data}")
+        
+        # Get prediction from engine
+        result = pest_engine.predict_pest_risk(data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Pest Prediction Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/market-advisory', methods=['POST'])
+def market_advisory():
+    """
+    Get seed-to-market advisory (harvest timing + price forecast).
+    """
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No input data provided'}), 400
+            
+        print(f"Market Advisory Request: {data}")
+        result = market_engine.analyze_market(data)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Market Advisory Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("AgriSphere AI API Server Starting...")
@@ -379,6 +522,9 @@ if __name__ == '__main__':
     print("Disease detection: POST to /detect-disease")
     print("Yield prediction: POST to /predict")
     print("Voice assistant: POST to /voice-query")
+    print("Fertilizer Recommendation: POST to /recommend-fertilizer")
+    print("Pest Prediction: POST to /predict-pest")
+    print("Market Advisory: POST to /market-advisory")
     print("Voice examples: GET /voice-examples")
     print("="*50 + "\n")
     app.run(debug=True, port=5000, threaded=True)

@@ -72,7 +72,7 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated Background Mesh */}
       <div className="fixed inset-0 bg-gradient-mesh opacity-50 animate-glow-pulse pointer-events-none" />
-      
+
       {/* Floating Orbs */}
       <div className="fixed top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-[100px] animate-float" />
       <div className="fixed bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
@@ -98,7 +98,7 @@ const Index = () => {
             />
             <span className="text-2xl font-bold gradient-text">AgriSphere AI</span>
           </motion.div>
-          
+
           <nav className="hidden md:flex items-center gap-6">
             {[
               { name: "Home", path: "/", public: true },
@@ -110,6 +110,8 @@ const Index = () => {
               { name: "IoT Monitoring", path: "/iot-monitoring", public: false },
               { name: "Marketplace", path: "/marketplace", public: false },
               { name: "Voice Assistant", path: "/voice-assistant", public: false },
+              { name: "Fertilizer AI", path: "/fertilizer-recommendation", public: false },
+              { name: "Pest Forecast", path: "/pest-prediction", public: false },
               { name: "Dashboard", path: "/comprehensive-dashboard", public: false }
             ].filter(item => (item.public && !isAuthenticated) || (!item.public && isAuthenticated)).map((item, i) => (
               <motion.a
@@ -158,7 +160,7 @@ const Index = () => {
           </div>
         </div>
       </motion.header>
-      
+
       {/* Hero Section */}
       <section className="relative z-10 container mx-auto px-4 py-20 md:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -176,15 +178,15 @@ const Index = () => {
               <span className="animate-pulse mr-2">●</span>
               AI-Powered Smart Agriculture
             </motion.div>
-            
+
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="block">India's First</span>
               <span className="block gradient-text">AI + GIS Smart Farming</span>
               <span className="block">Intelligence Platform</span>
             </h1>
-            
+
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              Complete seed-to-market intelligence with multi-class disease detection, digital twin mapping, 
+              Complete seed-to-market intelligence with multi-class disease detection, digital twin mapping,
               yield prediction, IoT monitoring, and rural-accessible technology. Increase yields by 30%, reduce costs by 40%.
             </p>
 
@@ -311,7 +313,7 @@ const Index = () => {
             >
               <Card className="group relative overflow-hidden border-2 border-border/50 hover:border-primary/50 bg-card/50 backdrop-blur-sm p-6 transition-all duration-300 hover:shadow-glow-primary">
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-                
+
                 <motion.div
                   className="relative"
                   whileHover={{ scale: 1.05 }}
@@ -320,15 +322,15 @@ const Index = () => {
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 shadow-lg`}>
                     <feature.icon className="w-7 h-7 text-white" />
                   </div>
-                  
+
                   <h3 className="text-xl font-bold mb-2 group-hover:gradient-text transition-all duration-300">
                     {feature.title}
                   </h3>
-                  
+
                   <p className="text-muted-foreground leading-relaxed mb-4">
                     {feature.description}
                   </p>
-                  
+
                   {feature.details && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       {feature.details.map((detail, idx) => (
@@ -376,10 +378,10 @@ const Index = () => {
                   {/* Animated Border */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: '3.5s' }}></div>
                   <div className="absolute inset-[2px] rounded-2xl bg-card"></div>
-                  
+
                   {/* Bloom Effect on Hover */}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-700"></div>
-                  
+
                   <div className="relative z-10">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
                       {item.step}
@@ -409,38 +411,38 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {[
-              { 
-                title: "Pest Attack Prediction", 
+              {
+                title: "Pest Attack Prediction",
                 desc: "AI forecasts pest attack probability (0-100%) using climate, humidity & historical patterns for next 7 days",
                 icon: "🐛",
                 features: ["Climate Analysis", "7-Day Risk Forecast", "Prevention Alerts", "Treatment Recommendations"]
               },
-              { 
-                title: "Seed-to-Market Advisory", 
+              {
+                title: "Seed-to-Market Advisory",
                 desc: "Complete guidance from seed selection to market pricing with harvest time prediction & mandi recommendations",
                 icon: "🌾",
                 features: ["Seed Selection", "Sowing Time", "Harvest Prediction", "Market Pricing"]
               },
-              { 
-                title: "Voice Assistant (Hindi)", 
+              {
+                title: "Voice Assistant (Hindi)",
                 desc: "Farmers speak: 'Gehun mein rog a gaya hai' - AI responds with disease type, action & cost in local language",
                 icon: "🎤",
                 features: ["Hindi Support", "Voice Recognition", "Local Languages", "Audio Responses"]
               },
-              { 
-                title: "Government Schemes AI", 
+              {
+                title: "Government Schemes AI",
                 desc: "Auto-identifies subsidies, loans, crop insurance & PM-KISAN benefits based on farmer profile & location",
                 icon: "🏛️",
                 features: ["Subsidy Matching", "Loan Eligibility", "Insurance Plans", "PM-KISAN"]
               },
-              { 
-                title: "Farmer-Buyer Marketplace", 
+              {
+                title: "Farmer-Buyer Marketplace",
                 desc: "Direct selling platform with AI pricing, logistics suggestions to increase rural income & eliminate middlemen",
                 icon: "🛒",
                 features: ["Direct Selling", "AI Pricing", "Logistics", "Income Boost"]
               },
-              { 
-                title: "Blockchain Traceability", 
+              {
+                title: "Blockchain Traceability",
                 desc: "Track crop origin, supply chain & authenticity using blockchain for premium quality assurance",
                 icon: "⛓️",
                 features: ["Origin Tracking", "Supply Chain", "Authenticity", "Quality Assurance"]
@@ -450,10 +452,10 @@ const Index = () => {
                 {/* Animated Border */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: `${3 + i * 0.5}s` }}></div>
                 <div className="absolute inset-[2px] rounded-2xl bg-card"></div>
-                
+
                 {/* Bloom Effect on Hover */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-700"></div>
-                
+
                 <div className="relative z-10">
                   <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
                   <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
@@ -484,23 +486,23 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {[
-              { 
-                title: "Offline Mode", 
+              {
+                title: "Offline Mode",
                 desc: "Works without internet with local caching for critical farming information",
                 icon: "📱"
               },
-              { 
-                title: "Hindi + Local Languages", 
+              {
+                title: "Hindi + Local Languages",
                 desc: "Full support for Hindi and regional languages with voice commands",
                 icon: "🗣️"
               },
-              { 
-                title: "SMS Fallback Alerts", 
+              {
+                title: "SMS Fallback Alerts",
                 desc: "Critical alerts sent via SMS when internet is unavailable",
                 icon: "📨"
               },
-              { 
-                title: "Community Forums", 
+              {
+                title: "Community Forums",
                 desc: "Farmers discuss pests, diseases, schemes with AI moderation",
                 icon: "👥"
               }
@@ -509,10 +511,10 @@ const Index = () => {
                 {/* Animated Border */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: '2.5s' }}></div>
                 <div className="absolute inset-[2px] rounded-xl bg-card"></div>
-                
+
                 {/* Bloom Effect on Hover */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-700"></div>
-                
+
                 <div className="relative z-10">
                   <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
                   <h3 className="font-bold mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
@@ -536,18 +538,18 @@ const Index = () => {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
-              { 
-                title: "Microbusiness Support", 
+              {
+                title: "Microbusiness Support",
                 desc: "Training and support for honey, spices, pickles, and handicraft businesses",
                 icon: "🍯"
               },
-              { 
-                title: "Training Modules", 
+              {
+                title: "Training Modules",
                 desc: "Comprehensive training programs for women entrepreneurs in rural areas",
                 icon: "📚"
               },
-              { 
-                title: "Marketplace Access", 
+              {
+                title: "Marketplace Access",
                 desc: "Direct marketplace listings for women-led agricultural products",
                 icon: "🛍️"
               }
@@ -556,10 +558,10 @@ const Index = () => {
                 {/* Animated Border */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: '3.5s' }}></div>
                 <div className="absolute inset-[2px] rounded-2xl bg-card"></div>
-                
+
                 {/* Bloom Effect on Hover */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-700"></div>
-                
+
                 <div className="relative z-10">
                   <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
                   <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
@@ -636,10 +638,10 @@ const Index = () => {
                 {/* Animated Border */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: '4s' }}></div>
                 <div className="absolute inset-[2px] rounded-2xl bg-card"></div>
-                
+
                 {/* Bloom Effect on Hover */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-700"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex gap-1">
@@ -693,10 +695,10 @@ const Index = () => {
                 {/* Animated Border */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-accent to-secondary opacity-50 animate-spin" style={{ animationDuration: '2s' }}></div>
                 <div className="absolute inset-[2px] rounded-xl bg-card"></div>
-                
+
                 {/* Bloom Effect on Hover */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-700"></div>
-                
+
                 <div className="relative z-10">
                   <p className="font-bold mb-2 group-hover:text-primary transition-colors">{tech.name}</p>
                   <p className="text-sm text-muted-foreground group-hover:text-foreground/80 transition-colors">{tech.desc}</p>
@@ -717,7 +719,7 @@ const Index = () => {
         >
           <Card className="relative overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 backdrop-blur-sm p-12 md:p-16 text-center shadow-glow-primary">
             <div className="absolute inset-0 bg-gradient-mesh opacity-30" />
-            
+
             <motion.div
               className="relative z-10"
               initial={{ y: 20, opacity: 0 }}
@@ -728,7 +730,7 @@ const Index = () => {
                 Ready to Transform Your
                 <span className="block gradient-text">Agricultural Business?</span>
               </h2>
-              
+
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Join thousands of farmers who are already using AgriSphere AI to increase yields and reduce costs
               </p>
@@ -764,8 +766,8 @@ const Index = () => {
             </div>
 
             {[
-              { 
-                title: "Features", 
+              {
+                title: "Features",
                 links: [
                   { name: "Disease Detection", path: "/disease-detection" },
                   { name: "Digital Twin", path: "/digital-twin" },
@@ -773,8 +775,8 @@ const Index = () => {
                   { name: "Voice Assistant", path: "/voice-assistant" }
                 ]
               },
-              { 
-                title: "Platform", 
+              {
+                title: "Platform",
                 links: [
                   { name: "Marketplace", path: "/marketplace" },
                   { name: "IoT Monitoring", path: "/iot-monitoring" },
@@ -782,8 +784,8 @@ const Index = () => {
                   { name: "Community", path: "#" }
                 ]
               },
-              { 
-                title: "Support", 
+              {
+                title: "Support",
                 links: [
                   { name: "Help Center", path: "#" },
                   { name: "Documentation", path: "#" },
@@ -826,7 +828,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
-      
+
       {/* AI Chatbot */}
       <AIChat />
     </div>
