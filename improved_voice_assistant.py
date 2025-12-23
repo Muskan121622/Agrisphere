@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
 Improved Voice Assistant for Agricultural Questions
-Provides accurate answers in Hindi and English
+Provides accurate answers in Hindi and English using Google Gemini API
 """
 
 import json
 import re
 from datetime import datetime
-import random
+import google.generativeai as genai
+import os
+
+# Configure Gemini API
+GENAI_API_KEY = "AIzaSyBeWiL-p4SWZq88eEE1ZP0qixiDKfIKOsI"
+genai.configure(api_key=GENAI_API_KEY)
 
 class AgriVoiceAssistant:
     def __init__(self):
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
         self.knowledge_base = self.load_agricultural_knowledge()
         
     def load_agricultural_knowledge(self):
@@ -124,49 +130,156 @@ class AgriVoiceAssistant:
     
     def normalize_text(self, text):
         """Normalize text for better matching"""
-        # Remove punctuation and extra spaces
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
+        # Simple cleanup without regex to avoid encoding issues
+        text = text.replace('?', ' ').replace('.', ' ').replace(',', ' ').replace('!', ' ')
+        return text.strip()
     
     def generate_response(self, text, is_hindi=False):
         """Generate appropriate agricultural response"""
         
-        # Crop information queries (check first)
-        if any(word in text for word in ['kharif', 'rabi', 'खरीफ', 'रबी']) or (any(word in text for word in ['crops', 'fasal', 'फसल']) and any(word in text for word in ['kaun', 'kya', 'which', 'what'])):
+        # 1. Direct Crop + Intent Check (Local Fast Path)
+        # This bypasses generic checks to ensure we answer common crop questions locally
+        local_response = self.check_local_knowledge(text, is_hindi)
+        if local_response:
+            return local_response
+
+        # 2. General Fallback to simple keyword routing (Legacy)
+        if any(word in text for word in ['kharif', 'rabi', 'खरीफ', 'रबी']):
             return self.handle_crop_info_query(text, is_hindi)
+            
+        # 3. If no local match, try Gemini AI
+        return self.call_gemini_api(text, is_hindi)
+
+    def check_local_knowledge(self, text, is_hindi=False):
+        """Check if we can answer from local knowledge base"""
         
-        # Disease-related queries
-        elif any(word in text for word in ['rog', 'रोग', 'disease', 'bimari', 'बीमारी', 'गया', 'आ', 'करें', 'kya', 'kare']):
-            return self.handle_disease_query(text, is_hindi)
-        
-        # Fertilizer-related queries  
-        elif any(word in text for word in ['khad', 'खाद', 'fertilizer', 'urvarak', 'उर्वरक']):
-            return self.handle_fertilizer_query(text, is_hindi)
-        
-        # Irrigation queries
-        elif any(word in text for word in ['pani', 'पानी', 'water', 'sinchai', 'सिंचाई']):
-            return self.handle_irrigation_query(text, is_hindi)
-        
-        # Pest queries
-        elif any(word in text for word in ['keet', 'कीट', 'pest', 'sundi', 'सुंडी']):
-            return self.handle_pest_query(text, is_hindi)
-        
-        # Harvest timing
-        elif any(word in text for word in ['kaat', 'काट', 'harvest']):
-            return self.handle_harvest_query(text, is_hindi)
-        
-        # Weather queries
-        elif any(word in text for word in ['mausam', 'मौसम', 'weather', 'barish', 'बारिश']):
-            return self.handle_weather_query(text, is_hindi)
-        
-        # General farming advice
-        else:
-            return self.handle_general_query(text, is_hindi)
-    
+        # Sowing/Farming Time (Kheti/Kab)
+        if any(word in text for word in ['kab', 'when', 'time', 'samay', 'समय', 'mahina', 'month']):
+             if any(word in text for word in ['kheti', 'farming', 'ugaye', 'laga', 'ki jati', 'boai', 'sowing', 'ropai', 'karen', 'करें']):
+                 return self.handle_crop_info_query(text, is_hindi)
+                 
+        # Harvest
+        if any(word in text for word in ['kaat', 'katai', 'harvest', 'katna', 'काटना', 'कटाई', 'kaatni', 'काटनी']):
+             return self.handle_harvest_query(text, is_hindi)
+             
+        # Disease
+        if any(word in text for word in ['rog', 'disease', 'bimari', 'kida', 'pest', 'रोग', 'बीमारी', 'कीड़ा', 'insects']):
+             return self.handle_disease_query(text, is_hindi)
+             
+        # Fertilizer
+        if any(word in text for word in ['khad', 'fertilizer', 'urvarak', 'dava', 'खाद', 'उर्वरक', 'दवा']):
+             return self.handle_fertilizer_query(text, is_hindi)
+             
+        # Irrigation
+        if any(word in text for word in ['pani', 'water', 'sinchai', 'पानी', 'सिंचाई']):
+             return self.handle_irrigation_query(text, is_hindi)
+             
+        return None
+
+    def handle_crop_info_query(self, text, is_hindi):
+        """Handle crop information queries"""
+        # Kharif/Rabi Definitions
+        if 'kharif' in text or 'खरीफ' in text:
+            if is_hindi:
+                return {
+                    'text': "खरीफ फसलें (जैसे धान, मक्का) बारिश में (जून-जुलाई) बोई जाती हैं और अक्टूबर-नवंबर में काटी जाती हैं।",
+                    'audio_text': "खरीफ फसलें जून-जुलाई में बोई जाती हैं।",
+                    'solution': "Sowing: June-July",
+                    'timing': "Monsoon Season"
+                }
+        elif 'rabi' in text or 'रबी' in text:
+             if is_hindi:
+                return {
+                    'text': "रबी फसलें (जैसे गेहूं, सरसों) सर्दी में (अक्टूबर-दिसंबर) बोई जाती हैं और मार्च-अप्रैल में काटी जाती हैं।",
+                    'audio_text': "रबी फसलें अक्टूबर-दिसंबर में बोई जाती हैं।",
+                    'solution': "Sowing: Oct-Dec",
+                    'timing': "Winter Season"
+                }
+
+        # Specific Crop Sowing Logic
+        if 'rice' in text or 'dhan' in text or 'धान' in text or 'chawal' in text or 'चावल' in text:
+             if is_hindi:
+                return {
+                    'text': "धान (चावल) खरीफ की प्रमुख फसल है। इसकी नर्सरी मई-जून में और रोपाई जुलाई में की जाती है।",
+                    'audio_text': "चावल की खेती जून-जुलाई में होती है।",
+                    'solution': "Nursery: May-June, Transplanting: July",
+                    'timing': "Monsoon (Kharif)"
+                }
+             else:
+                return {
+                    'text': "Rice is a Kharif crop. Nursery preparation starts in May-June, transplanting in July.",
+                    'audio_text': "Rice farming is done in June-July.",
+                    'solution': "Transplanting: July",
+                    'timing': "Monsoon (Kharif)"
+                }
+                
+        if 'wheat' in text or 'gehun' in text or 'गेहूं' in text:
+             if is_hindi:
+                return {
+                    'text': "गेहूं रबी की फसल है। इसकी बुआई 15 नवंबर से 15 दिसंबर के बीच सबसे अच्छी मानी जाती है।",
+                    'audio_text': "गेहूं की बुआई नवंबर-दिसंबर में करें।",
+                    'solution': "Sowing: Nov 15 - Dec 15",
+                    'timing': "Winter (Rabi)"
+                }
+             else:
+                return {
+                    'text': "Wheat is a Rabi crop. Best sowing time is 15th November to 15th December.",
+                    'audio_text': "Sow wheat in November to December.",
+                    'solution': "Sowing: Nov 15 - Dec 15",
+                    'timing': "Winter (Rabi)"
+                }
+
+        # If we detected "farming query" but didn't match a crop above, try Gemini for the specific answer
+        return self.call_gemini_api(text, is_hindi)
+
+    def call_gemini_api(self, text, is_hindi):
+        """Call Gemini API for general queries with fallback"""
+        try:
+             # Construct the prompt
+            system_instruction = """You are AgriSphere AI, an expert agricultural assistant for Indian farmers. 
+            You provide accurate, practical farming advice.
+            
+            Analyze the following user query and provide a JSON response.
+            The user might ask in English or Hindi. You MUST reply in the SAME language as the query (English or Hindi).
+            
+            Required JSON Structure:
+            {
+                "text": "Detailed, helpful answer (2-3 sentences max).",
+                "audio_text": "A shorter, conversational version for text-to-speech (1 sentence).",
+                "solution": "Key action item or direct solution (very brief).",
+                "timing": "Best time to apply/do this (optional, string)."
+            }
+            
+            Do NOT use markdown code blocks. Just valid JSON string.
+            If the query is irrelevant to agriculture, politely steer back to farming.
+            """
+            full_prompt = f"{system_instruction}\n\nUser Query: {text}"
+            
+            response = self.model.generate_content(full_prompt)
+            response_text = response.text.strip()
+            
+            # Clean up if the model wrapped it in markdown
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+                
+            response_data = json.loads(response_text)
+            return response_data
+            
+        except Exception as e:
+            print(f"Gemini API Error (Quota/Network): {e}")
+            # Debugging: Show actual error in UI temporarily
+            return {
+                'text': f"System Error: {str(e)}",
+                'audio_text': "I encountered an error.",
+                'solution': "Check console for details."
+            }
+
     def handle_disease_query(self, text, is_hindi):
         """Handle disease-related queries"""
-        
         # Detect crop type
         crop = self.detect_crop(text)
         
@@ -197,25 +310,11 @@ class AgriVoiceAssistant:
                     'prevention': disease_info['prevention']
                 }
         
-        # Generic disease response
-        if is_hindi:
-            return {
-                'text': "फसल में रोग के लक्षण दिख रहे हैं। कृपया नजदीकी कृषि विशेषज्ञ से संपर्क करें।",
-                'audio_text': "फसल में रोग है। कृषि विशेषज्ञ से सलाह लें।",
-                'solution': "विशेषज्ञ से सलाह लें",
-                'prevention': "नियमित निरीक्षण करें"
-            }
-        else:
-            return {
-                'text': "Disease symptoms detected in crop. Please consult agricultural expert.",
-                'audio_text': "Disease detected. Consult agricultural expert.",
-                'solution': "Consult expert for proper diagnosis",
-                'prevention': "Regular crop monitoring"
-            }
+        # If specific disease not found, use Gemini
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_fertilizer_query(self, text, is_hindi):
         """Handle fertilizer-related queries"""
-        
         if any(word in text for word in ['yellow', 'peela', 'पीला', 'nitrogen']):
             fert_info = self.knowledge_base['fertilizers']['nitrogen_deficiency']
             if is_hindi:
@@ -225,28 +324,11 @@ class AgriVoiceAssistant:
                     'solution': fert_info['treatment'],
                     'timing': fert_info['timing']
                 }
-        
-        # Generic fertilizer advice
-        if is_hindi:
-            return {
-                'text': "मिट्टी की जांच कराकर संतुलित उर्वरक का प्रयोग करें। NPK 19:19:19 का छिड़काव करें।",
-                'audio_text': "संतुलित उर्वरक का प्रयोग करें।",
-                'solution': "NPK 19:19:19 @ 2kg per acre",
-                'timing': "As per crop stage"
-            }
-        else:
-            return {
-                'text': "Apply balanced fertilizer based on soil test. Use NPK 19:19:19.",
-                'audio_text': "Apply balanced fertilizer.",
-                'solution': "NPK 19:19:19 @ 2kg per acre",
-                'timing': "As per crop growth stage"
-            }
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_irrigation_query(self, text, is_hindi):
         """Handle irrigation queries"""
-        
         crop = self.detect_crop(text)
-        
         if crop == 'wheat':
             irr_info = self.knowledge_base['irrigation']['wheat']
             if is_hindi:
@@ -256,46 +338,16 @@ class AgriVoiceAssistant:
                     'solution': f"Frequency: {irr_info['frequency']}",
                     'amount': irr_info['water_amount']
                 }
-        
-        # Generic irrigation advice
-        if is_hindi:
-            return {
-                'text': "मिट्टी की नमी देखकर सिंचाई करें। सुबह या शाम के समय पानी दें।",
-                'audio_text': "मिट्टी की नमी देखकर पानी दें।",
-                'solution': "Check soil moisture before irrigation",
-                'timing': "Early morning or evening"
-            }
-        else:
-            return {
-                'text': "Check soil moisture before irrigation. Water in morning or evening.",
-                'audio_text': "Check soil moisture before watering.",
-                'solution': "Monitor soil moisture levels",
-                'timing': "Early morning or evening hours"
-            }
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_pest_query(self, text, is_hindi):
         """Handle pest-related queries"""
-        
-        if is_hindi:
-            return {
-                'text': "कीट प्रकोप के लिए नीम का तेल या इमिडाक्लोप्रिड का छिड़काव करें।",
-                'audio_text': "कीट के लिए नीम का तेल छिड़कें।",
-                'solution': "Neem oil or Imidacloprid spray",
-                'organic': "Neem oil + soap solution"
-            }
-        else:
-            return {
-                'text': "For pest control, use neem oil or imidacloprid spray.",
-                'audio_text': "Use neem oil for pest control.",
-                'solution': "Neem oil or chemical pesticide",
-                'organic': "Organic neem oil treatment"
-            }
+        # Simple fallback for pests if no specific logic
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_harvest_query(self, text, is_hindi):
         """Handle harvest timing queries"""
-        
         crop = self.detect_crop(text)
-        
         if is_hindi:
             if crop == 'wheat':
                 return {
@@ -304,42 +356,15 @@ class AgriVoiceAssistant:
                     'solution': "Harvest when grains turn golden",
                     'timing': "March-April"
                 }
-            else:
-                return {
-                    'text': "फसल की कटाई तब करें जब दाने पूरी तरह पक जाएं।",
-                    'audio_text': "दाने पकने पर कटाई करें।",
-                    'solution': "Harvest when fully mature",
-                    'timing': "Check grain maturity"
-                }
-        else:
-            return {
-                'text': "Harvest when crop reaches full maturity. Check grain moisture content.",
-                'audio_text': "Harvest when crop is fully mature.",
-                'solution': "Check maturity indicators",
-                'timing': "Based on crop variety"
-            }
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_weather_query(self, text, is_hindi):
         """Handle weather-related queries"""
-        
-        if is_hindi:
-            return {
-                'text': "मौसम के अनुसार फसल की देखभाल करें। बारिश से पहले जल निकासी की व्यवस्था करें।",
-                'audio_text': "मौसम के अनुसार फसल की देखभाल करें।",
-                'solution': "Weather-based crop management",
-                'precaution': "Arrange proper drainage"
-            }
-        else:
-            return {
-                'text': "Follow weather-based crop management. Ensure proper drainage before rains.",
-                'audio_text': "Follow weather-based farming practices.",
-                'solution': "Monitor weather forecasts",
-                'precaution': "Prepare for weather changes"
-            }
+        # Always use Gemini for weather logic if possible, or rule based
+        return self.call_gemini_api(text, is_hindi)
     
     def handle_crop_info_query(self, text, is_hindi):
         """Handle crop information queries"""
-        
         if 'kharif' in text or 'खरीफ' in text:
             if is_hindi:
                 return {
@@ -348,54 +373,48 @@ class AgriVoiceAssistant:
                     'solution': "Kharif crops: Rice, Maize, Cotton, Sugarcane",
                     'timing': "Sowing: June-July, Harvesting: October-November"
                 }
-            else:
-                return {
-                    'text': "Kharif crops are grown during monsoon season. Main Kharif crops: Rice, Maize, Cotton, Sugarcane, Sorghum, Pearl millet, Pigeon pea, Green gram, Black gram. Sown in June-July and harvested in October-November.",
-                    'audio_text': "Kharif crops include rice, maize, cotton, and sugarcane grown during monsoon.",
-                    'solution': "Monsoon season crops",
-                    'timing': "Sowing: June-July, Harvesting: October-November"
-                }
-        
         elif 'rabi' in text or 'रबी' in text:
             if is_hindi:
                 return {
-                    'text': "रबी फसलें सर्दी के मौसम में उगाई जाती हैं। मुख्य रबी फसलें: गेहूं, जौ, चना, मटर, सरसों, आलू, प्याज। ये अक्टूबर-दिसंबर मे��� बोई जाती हैं और मार्च-मई में काटी जाती हैं।",
+                    'text': "रबी फसलें सर्दी के मौसम में उगाई जाती हैं। मुख्य रबी फसलें: गेहूं, जौ, चना, मटर, सरसों, आलू, प्याज। ये अक्टूबर-दिसंबर में बोई जाती हैं और मार्च-मई में काटी जाती हैं।",
                     'audio_text': "रबी फसलें गेहूं, जौ, चना, सरसों हैं। सर्दी में उगाई जाती हैं।",
                     'solution': "Rabi crops: Wheat, Barley, Gram, Mustard",
                     'timing': "Sowing: October-December, Harvesting: March-May"
                 }
         
-        # Generic crop info
-        if is_hindi:
-            return {
-                'text': "फसलों के बारे में पूछें - खरीफ, रबी, या कोई विशेष फसल।",
-                'audio_text': "फसलों के बारे में विस्तार से पूछें।",
-                'solution': "Ask about specific crops",
-                'examples': ["खरीफ फसलें", "रबी फसलें", "धान की खेती"]
-            }
-        else:
-            return {
-                'text': "Ask about crops - Kharif, Rabi, or specific crop cultivation.",
-                'audio_text': "Ask about specific crop information.",
-                'solution': "Crop-specific queries",
-                'examples': ["Kharif crops", "Rabi crops", "Rice cultivation"]
-            }
+        # Check for specific crop names like Rice/Dhan
+        if 'rice' in text or 'dhan' in text or 'धान' in text or 'chawal' in text or 'चावल' in text:
+             if is_hindi:
+                return {
+                    'text': "धान (चावल) एक मुख्य खरीफ फसल है। इसकी खेती जून-जुलाई में शुरू होती है। इसे अच्छी बारिश और पानी की आवश्यकता होती है।",
+                    'audio_text': "चावल की खेती जून-जुलाई में बारिश के मौसम में की जाती है।",
+                    'solution': "Sowing: June-July (Kharif Season)",
+                    'timing': "Monsoon Season"
+                }
+             else:
+                return {
+                    'text': "Rice (Paddy) is a major Kharif crop. Its cultivation starts in June-July. It requires good rainfall and standing water.",
+                    'audio_text': "Rice farming is done in June-July during monsoon.",
+                    'solution': "Sowing: June-July (Kharif Season)",
+                    'timing': "Monsoon Season"
+                }
+
+        return self.call_gemini_api(text, is_hindi)
     
-    def handle_general_query(self, text, is_hindi):
-        """Handle general farming queries"""
-        
+    def handle_general_fallback(self, text, is_hindi):
+        """Handle general farming queries when AI fails"""
         if is_hindi:
             return {
-                'text': "मैं AgriSphere AI हूं, आपका कृषि सहायक। मैं फसल रोग, मौसम सलाह और खेती तकनीकों में मदद कर सकता हूं।",
-                'audio_text': "मैं आपका कृषि सहायक हूं। कृषि संबंधी प्रश्न पूछें।",
-                'solution': "Ask specific agricultural questions",
+                'text': "मैं AgriSphere AI हूं। तकनीकी समस्या के कारण मैं अभी संपर्क नहीं कर पा रहा। कृपया थोड़ी देर बाद प्रयास करें।",
+                'audio_text': "तकनीकी समस्या है। कृपया बाद में प्रयास करें।",
+                'solution': "Server busy, try again later",
                 'examples': ["फसल में रोग", "खाद की मात्रा", "सिंचाई का समय"]
             }
         else:
             return {
-                'text': "I am AgriSphere AI, your farming assistant. I can help with crop diseases, weather advice, and farming techniques.",
-                'audio_text': "I am your agricultural assistant. Ask farming questions.",
-                'solution': "Ask specific agricultural questions",
+                'text': "I am AgriSphere AI. Due to technical issues, I cannot connect right now. Please try again later.",
+                'audio_text': "Technical issue. Please try again later.",
+                'solution': "Server busy, try again later",
                 'examples': ["Crop diseases", "Fertilizer advice", "Irrigation timing"]
             }
     
@@ -423,25 +442,16 @@ def test_voice_assistant():
     
     test_queries = [
         "गेहूं में रोग आ गया है, क्या करें?",
-        "Wheat has disease, what to do?",
-        "आज पानी देना चाहिए?",
-        "Should I water today?",
-        "फसल कब काटनी चाहिए?",
-        "When should I harvest?",
-        "खाद कितनी डालनी चाहिए?",
-        "How much fertilizer to apply?"
+        "What is the best fertilizer for tomatoes?"
     ]
     
-    print("AgriSphere AI Voice Assistant Test")
+    print("AgriSphere AI Voice Assistant Test (Gemini Powered)")
     print("=" * 50)
     
     for query in test_queries:
         print(f"\nQuery: {query}")
         response = assistant.process_voice_input(query)
-        print(f"Response: {response['text']}")
-        print(f"Audio: {response['audio_text']}")
-        if 'solution' in response:
-            print(f"Solution: {response['solution']}")
+        print(f"Response: {response}")
 
 if __name__ == "__main__":
     test_voice_assistant()

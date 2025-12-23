@@ -32,10 +32,7 @@ TARGET_ACCURACY = 0.95
 
 class PlantDiseaseTrainer:
 
-    def __init__(self, dataset_path="dataset", output_dir="model_output"):
-
     def __init__(self, dataset_path="public/PlantVillage", output_dir="model_output"):
-
         self.dataset_path = Path(dataset_path)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
@@ -61,6 +58,22 @@ class PlantDiseaseTrainer:
             'pest_infected': ['Spider_mites', 'mites', 'pest'],
             'nutrient_deficiency': ['YellowLeaf', 'Curl_Virus', 'mosaic_virus', 'Mold']
         }
+        
+        # If using archive4 dataset, use different mappings
+        if 'archive' in str(self.dataset_path).lower():
+            class_mappings = {
+                'healthy': ['healthy'],
+                'leaf_blight': ['blight', 'early_blight', 'late_blight', 'bacterial_wilt'],
+                'leaf_rust': ['rust'],
+                'leaf_spot': ['spot', 'septoria', 'target_spot', 'leaf_scorch', 'brown_spot', 'gray_spot', 'black_spot'],
+                'rot': ['rot', 'fruit_rot'],
+                'pest_infected': ['pest', 'mite', 'aphid', 'beetle', 'caterpillar', 'thrip', 'whitefly', 'spider_mite'],
+                'viral_disease': ['virus', 'mosaic', 'curl_virus', 'yellow_leaf'],
+                'powdery_mildew': ['powdery_mildew'],
+                'scab': ['scab'],
+                'anthracnose': ['anthracnose'],
+                'downy_mildew': ['downy_mildew']
+            }
         
         # Create class directories
         for class_name in class_mappings.keys():

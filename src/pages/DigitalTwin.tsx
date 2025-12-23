@@ -1,7 +1,18 @@
 import { motion } from "framer-motion";
-import { Map, Layers, Droplets, Bug, TrendingUp, Satellite, ArrowLeft, MapPin, Activity } from "lucide-react";
+import { Map, Layers, Droplets, Bug, TrendingUp, Satellite, ArrowLeft, MapPin, Activity, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 import { DigitalTwinEngine } from "@/lib/digital-twin";
 import { GISDigitalTwin } from "@/lib/gis-digital-twin";
 import { useState, lazy, Suspense } from "react";
@@ -16,58 +27,107 @@ const DigitalTwin = () => {
   const [gisData, setGisData] = useState(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const initializeDemoFarm = async () => {
-    console.log('🚀 Digital Twin initialization started!');
-    
+  // Form State
+  const [formData, setFormData] = useState({
+    farmName: "My Digital Farm",
+    ownerName: "AgriSphere User",
+    latitude: "26.1440",
+    longitude: "91.7360",
+    size: "10" // Acres
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const useCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData(prev => ({
+            ...prev,
+            latitude: position.coords.latitude.toFixed(6),
+            longitude: position.coords.longitude.toFixed(6)
+          }));
+        },
+        (error) => {
+          console.error("Error getting location", error);
+          alert("Could not get your location. Please enter manually.");
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
+
+  const generateFarmCoordinates = (lat: number, lng: number, acres: number) => {
+    // Convert acres to square meters (1 acre = 4046.86 sq meters)
+    const areaSqMeters = acres * 4046.86;
+    const sideLength = Math.sqrt(areaSqMeters); // Assuming square shape for simplicity
+    const radiusMeters = sideLength / 2;
+
+    // Convert meters to degrees (approximate)
+    const latDelta = radiusMeters / 111320;
+    const lngDelta = radiusMeters / (40075000 * Math.cos(lat * Math.PI / 180) / 360);
+
+    return [
+      { lat: lat - latDelta, lng: lng - lngDelta },
+      { lat: lat - latDelta, lng: lng + lngDelta },
+      { lat: lat + latDelta, lng: lng + lngDelta },
+      { lat: lat + latDelta, lng: lng - lngDelta }
+    ];
+  };
+
+  const initializeFarm = async () => {
+    setIsFormOpen(false);
+
     if (hasInitialized) {
-      // Scroll to map if already initialized
-      console.log('✅ Already initialized, scrolling to map...');
       document.getElementById('gis-map-section')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
     setIsInitializing(true);
-    console.log('⏳ Initializing farm data...');
-    
+    console.log('⏳ Initializing farm data...', formData);
+
     try {
-      // Demo farm coordinates (rectangular field in Bihar)
-      const demoCoordinates = [
-        { lat: 26.1440, lng: 91.7360 },
-        { lat: 26.1440, lng: 91.7370 },
-        { lat: 26.1450, lng: 91.7370 },
-        { lat: 26.1450, lng: 91.7360 }
-      ];
-      
-      console.log('📍 Farm coordinates set:', demoCoordinates);
-      
+      const lat = parseFloat(formData.latitude);
+      const lng = parseFloat(formData.longitude);
+      const acres = parseFloat(formData.size);
+
+      if (isNaN(lat) || isNaN(lng) || isNaN(acres)) {
+        throw new Error("Invalid input data");
+      }
+
+      const coordinates = generateFarmCoordinates(lat, lng, acres);
+      console.log('📍 Generated coordinates:', coordinates);
+
       // Initialize both traditional and GIS digital twins
       const [traditionalData, gisData] = await Promise.all([
-        twinEngine.initializeFarm(demoCoordinates.map(c => [c.lng, c.lat])),
-        gisEngine.initializeFarm('Demo Smart Farm', 'AgriSphere User', demoCoordinates)
+        twinEngine.initializeFarm(coordinates.map(c => [c.lng, c.lat])),
+        gisEngine.initializeFarm(formData.farmName, formData.ownerName, coordinates)
       ]);
-      
+
       console.log('✅ Farm data initialized:', { traditionalData, gisData });
-      
+
       setFarmData(traditionalData);
       setGisData(gisData);
       setHasInitialized(true);
-      
-      // Perform spatial analysis
+
       const spatialAnalysis = await gisEngine.performSpatialAnalysis();
       console.log('📊 Spatial Analysis Results:', spatialAnalysis);
-      
-      // Scroll to map after initialization
+
       setTimeout(() => {
-        console.log('🗺️ Scrolling to map section...');
         document.getElementById('gis-map-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 500);
-      
+
     } catch (error) {
       console.error('❌ Failed to initialize farm:', error);
+      alert("Failed to create Digital Twin. Please check your inputs.");
     } finally {
       setIsInitializing(false);
-      console.log('✅ Initialization complete!');
     }
   };
 
@@ -142,6 +202,7 @@ const DigitalTwin = () => {
           </div>
         </div>
       </header>
+
       {/* Header */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10">
         <div className="container mx-auto text-center">
@@ -155,44 +216,129 @@ const DigitalTwin = () => {
               GIS Smart Farm Digital Twin
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Create a complete digital replica of your farm with advanced GIS mapping, 
+              Create a complete digital replica of your farm with advanced GIS mapping,
               multi-layer visualization, and real-time monitoring for precision agriculture.
-              <br/>
+              <br />
               <span className="text-primary font-semibold mt-2 block">
                 ✨ Featuring: Farm Boundaries • Soil Zones • Irrigation Planning • Pest Risk Maps • NDVI Crop Health • Weather Stations
               </span>
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-primary hover:scale-105 transition-transform cursor-pointer z-10 relative" 
-                onClick={initializeDemoFarm} 
-                disabled={isInitializing}
-              >
-                {isInitializing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                    Initializing...
-                  </>
-                ) : (
-                  <>
-                    <Map className="mr-2 w-5 h-5" />
-                    {hasInitialized ? 'View Digital Twin' : 'Create Digital Twin'}
-                  </>
-                )}
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="lg"
+                    className="bg-gradient-primary hover:scale-105 transition-transform cursor-pointer z-10 relative"
+                    disabled={isInitializing}
+                  >
+                    {isInitializing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                        Initializing...
+                      </>
+                    ) : (
+                      <>
+                        <Map className="mr-2 w-5 h-5" />
+                        {hasInitialized ? 'Update Digital Twin' : 'Create Digital Twin'}
+                      </>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Setup Your Digital Farm</DialogTitle>
+                    <DialogDescription>
+                      Enter your farm details to generate a precise digital twin.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="farmName">Farm Name</Label>
+                      <Input
+                        id="farmName"
+                        name="farmName"
+                        value={formData.farmName}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Green Valley Farm"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="ownerName">Owner Name</Label>
+                      <Input
+                        id="ownerName"
+                        name="ownerName"
+                        value={formData.ownerName}
+                        onChange={handleInputChange}
+                        placeholder="e.g. John Doe"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="latitude">Latitude</Label>
+                        <Input
+                          id="latitude"
+                          name="latitude"
+                          value={formData.latitude}
+                          onChange={handleInputChange}
+                          placeholder="26.14"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="longitude">Longitude</Label>
+                        <Input
+                          id="longitude"
+                          name="longitude"
+                          value={formData.longitude}
+                          onChange={handleInputChange}
+                          placeholder="91.73"
+                        />
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={useCurrentLocation} className="w-full">
+                      <MapPin className="mr-2 w-4 h-4" />
+                      Use Current Location
+                    </Button>
+                    <div className="grid gap-2">
+                      <Label htmlFor="size">Farm Size (Acres)</Label>
+                      <Input
+                        id="size"
+                        name="size"
+                        type="number"
+                        value={formData.size}
+                        onChange={handleInputChange}
+                        placeholder="e.g. 10"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={initializeFarm} disabled={isInitializing}>
+                      {isInitializing ? 'Generating...' : 'Generate Digital Twin'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Button
+                size="lg"
+                variant="outline"
                 className="hover:scale-105 transition-transform cursor-pointer"
-                onClick={initializeDemoFarm}
+                onClick={() => {
+                  setFormData({
+                    farmName: "Demo Smart Farm",
+                    ownerName: "Demo User",
+                    latitude: "26.1440",
+                    longitude: "91.7360",
+                    size: "15"
+                  });
+                  setTimeout(initializeFarm, 100);
+                }}
                 disabled={isInitializing}
               >
                 <Satellite className="mr-2 w-5 h-5" />
-                View Live Demo
+                Quick Demo
               </Button>
             </div>
-            
+
             {/* Loading Progress */}
             {isInitializing && (
               <motion.div
@@ -206,9 +352,9 @@ const DigitalTwin = () => {
                     <span className="text-sm font-medium text-primary">Creating your digital farm twin...</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    • Mapping field boundaries<br/>
-                    • Analyzing soil zones<br/>
-                    • Planning irrigation systems<br/>
+                    • Mapping field boundaries for <strong>{formData.farmName}</strong><br />
+                    • Analyzing soil zones based on location<br />
+                    • Planning irrigation systems for {formData.size} acres<br />
                     • Detecting pest-prone areas
                   </div>
                 </div>
@@ -277,9 +423,15 @@ const DigitalTwin = () => {
       {gisData && (
         <section id="gis-map-section" className="py-20 px-4 bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20">
           <div className="container mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-8">Interactive Farm Map</h2>
+            <h2 className="text-4xl font-bold text-center mb-8">
+              Interactive Farm Map: {gisData.farmName}
+            </h2>
+            <div className="flex justify-center items-center gap-4 mb-8 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Lat: {formData.latitude}</span>
+              <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> Lng: {formData.longitude}</span>
+            </div>
             <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Explore your farm with multi-layer GIS visualization. Click on zones for detailed information.
+              Explore {gisData.owner}'s farm with multi-layer GIS visualization. Click on zones for detailed information.
             </p>
             <Suspense fallback={
               <div className="flex items-center justify-center py-20">
@@ -341,11 +493,10 @@ const DigitalTwin = () => {
                         <div className="font-medium">{area.pestType}</div>
                         <div className="text-sm text-muted-foreground">{area.id}</div>
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        area.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
-                        area.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${area.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
+                          area.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-green-100 text-green-700'
+                        }`}>
                         {area.riskLevel} risk
                       </div>
                     </div>
@@ -424,5 +575,6 @@ const DigitalTwin = () => {
     </div>
   );
 };
+
 
 export default DigitalTwin;

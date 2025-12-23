@@ -99,7 +99,7 @@ export function GISMap({ farmData }: GISMapProps) {
           fillColor: '#10b981',
           fillOpacity: 0.1,
         });
-        
+
         polygon.bindPopup(`
           <div class="p-2">
             <h3 class="font-bold text-lg">${boundary.name}</h3>
@@ -107,7 +107,7 @@ export function GISMap({ farmData }: GISMapProps) {
             <p><strong>Perimeter:</strong> ${boundary.perimeter.toFixed(0)} meters</p>
           </div>
         `);
-        
+
         polygon.addTo(layerGroupsRef.current.boundaries);
       });
     }
@@ -130,7 +130,7 @@ export function GISMap({ farmData }: GISMapProps) {
           fillColor: soilColors[zone.soilType],
           fillOpacity: 0.4,
         });
-        
+
         polygon.bindPopup(`
           <div class="p-2 max-w-xs">
             <h3 class="font-bold text-lg mb-2">${zone.name}</h3>
@@ -143,7 +143,7 @@ export function GISMap({ farmData }: GISMapProps) {
             </div>
           </div>
         `);
-        
+
         polygon.addTo(layerGroupsRef.current.soil);
       });
     }
@@ -166,7 +166,7 @@ export function GISMap({ farmData }: GISMapProps) {
           fillColor: irrigationColors[zone.type],
           fillOpacity: 0.3,
         });
-        
+
         polygon.bindPopup(`
           <div class="p-2">
             <h3 class="font-bold text-lg mb-2">${zone.name}</h3>
@@ -179,7 +179,7 @@ export function GISMap({ farmData }: GISMapProps) {
             </div>
           </div>
         `);
-        
+
         polygon.addTo(layerGroupsRef.current.irrigation);
       });
     }
@@ -201,7 +201,7 @@ export function GISMap({ farmData }: GISMapProps) {
           fillColor: riskColors[area.riskLevel],
           fillOpacity: 0.5,
         });
-        
+
         polygon.bindPopup(`
           <div class="p-2">
             <h3 class="font-bold text-lg mb-2">${area.name}</h3>
@@ -216,7 +216,7 @@ export function GISMap({ farmData }: GISMapProps) {
             </div>
           </div>
         `);
-        
+
         polygon.addTo(layerGroupsRef.current.pests);
       });
     }
@@ -225,12 +225,12 @@ export function GISMap({ farmData }: GISMapProps) {
     if (activeLayers.crops || activeLayers.ndvi) {
       farmData.cropGrowthZones.forEach((zone, index) => {
         const coords = zone.coordinates.map(c => [c.lat, c.lng] as [number, number]);
-        
+
         // NDVI color scale (red = low vegetation, green = high vegetation)
         let fillColor = '#10b981'; // Default green
         let healthStatus = 'Excellent';
         let healthEmoji = '🟢';
-        
+
         if (activeLayers.ndvi) {
           const ndvi = zone.ndvi;
           if (ndvi < 0.3) {
@@ -255,25 +255,25 @@ export function GISMap({ farmData }: GISMapProps) {
             healthEmoji = '🟢';
           }
         }
-        
+
         const polygon = L.polygon(coords, {
           color: activeLayers.ndvi ? fillColor : '#10b981',
           weight: 2,
           fillColor: fillColor,
           fillOpacity: activeLayers.ndvi ? 0.7 : 0.3,
         });
-        
+
         // Get approximate location name
         const centerLat = zone.coordinates.reduce((sum, c) => sum + c.lat, 0) / zone.coordinates.length;
         const centerLng = zone.coordinates.reduce((sum, c) => sum + c.lng, 0) / zone.coordinates.length;
-        
+
         polygon.bindPopup(`
           <div class="p-3 min-w-[280px]">
             <h3 class="font-bold text-lg mb-3 border-b pb-2">${zone.name}</h3>
             
             <div class="space-y-2">
               <div class="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-                <strong>📍 Location (Bihar):</strong><br/>
+                <strong>📍 Location:</strong><br/>
                 <span class="text-sm">Lat: ${centerLat.toFixed(4)}°, Lng: ${centerLng.toFixed(4)}°</span><br/>
                 <span class="text-xs text-gray-600">Zone ${index + 1} - ${zone.coordinates.length} points mapped</span>
               </div>
@@ -323,7 +323,7 @@ export function GISMap({ farmData }: GISMapProps) {
             </div>
           </div>
         `);
-        
+
         polygon.addTo(activeLayers.ndvi ? layerGroupsRef.current.ndvi : layerGroupsRef.current.crops);
       });
     }
@@ -337,7 +337,7 @@ export function GISMap({ farmData }: GISMapProps) {
       });
 
       const marker = L.marker([weather.coordinates.lat, weather.coordinates.lng], { icon });
-      
+
       marker.bindPopup(`
         <div class="p-2">
           <h3 class="font-bold text-lg mb-2">Weather Station</h3>
@@ -347,7 +347,7 @@ export function GISMap({ farmData }: GISMapProps) {
           <p><strong>Rainfall (week):</strong> ${weather.rainfall.weekly.toFixed(1)} mm</p>
         </div>
       `);
-      
+
       marker.addTo(layerGroupsRef.current.crops);
     });
   };
@@ -355,14 +355,14 @@ export function GISMap({ farmData }: GISMapProps) {
   const toggleLayer = (layer: keyof typeof activeLayers) => {
     setActiveLayers(prev => {
       const newState = { ...prev, [layer]: !prev[layer] };
-      
+
       // If toggling NDVI, turn off regular crops
       if (layer === 'ndvi' && !prev.ndvi) {
         newState.crops = false;
       } else if (layer === 'crops' && !prev.crops) {
         newState.ndvi = false;
       }
-      
+
       return newState;
     });
 
@@ -445,8 +445,8 @@ export function GISMap({ farmData }: GISMapProps) {
 
       {/* Map Container */}
       <Card className="overflow-hidden">
-        <div 
-          ref={mapContainerRef} 
+        <div
+          ref={mapContainerRef}
           className="w-full h-[600px]"
           style={{ background: '#f0f0f0' }}
         />
