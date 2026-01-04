@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Brain, MapPin, TrendingUp, Users, Shield, ArrowRight, Satellite, Cloud, Zap, Activity, ShoppingBag, Map } from "lucide-react";
+import { Brain, MapPin, TrendingUp, Users, Shield, ArrowRight, Cloud, Zap, Activity, ShoppingBag, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -39,13 +39,6 @@ const Index = () => {
       details: ["Weather Analysis", "Soil Type Mapping", "Historical Data", "ML Forecasting"]
     },
     {
-      icon: Satellite,
-      title: "IoT Soil Monitoring",
-      description: "Real-time monitoring of soil moisture, pH, temperature with Firebase integration and AI-powered irrigation suggestions",
-      gradient: "from-primary to-accent",
-      details: ["Soil Moisture", "pH Monitoring", "Temperature", "Smart Irrigation"]
-    },
-    {
       icon: Cloud,
       title: "Weather Risk Engine",
       description: "Real-time risk detection for floods, drought, heatwaves with SMS & WhatsApp alerts for proactive farm management",
@@ -70,13 +63,31 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated Background Mesh */}
-      <div className="fixed inset-0 bg-gradient-mesh opacity-50 animate-glow-pulse pointer-events-none" />
+      {/* Background Video Layer */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover scale-105"
+          style={{
+            filter: 'brightness(0.8) saturate(1.1)',
+            opacity: 0.7
+          }}
+        >
+          <source src="/videos/hero-farm.mp4" type="video/mp4" />
+          {/* Fallback pattern if video not found */}
+        </video>
+        {/* Cinematic Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/40 to-background" />
+        <div className="absolute inset-0 bg-gradient-mesh opacity-40 animate-glow-pulse" />
+      </div>
 
-      {/* Floating Orbs */}
-      <div className="fixed top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-[100px] animate-float" />
-      <div className="fixed bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
-      <div className="fixed top-1/2 left-1/2 w-80 h-80 bg-secondary/20 rounded-full blur-[100px] animate-float" style={{ animationDelay: "4s" }} />
+      {/* Floating Orbs (now with reduced opacity for video) */}
+      <div className="fixed top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-float" />
+      <div className="fixed bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
+      <div className="fixed top-1/2 left-1/2 w-80 h-80 bg-secondary/10 rounded-full blur-[100px] animate-float" style={{ animationDelay: "4s" }} />
 
       {/* Header */}
       <motion.header
@@ -107,12 +118,10 @@ const Index = () => {
               { name: "Disease Detection", path: "/disease-detection", public: false },
               { name: "Digital Twin", path: "/digital-twin", public: false },
               { name: "Yield Prediction", path: "/yield-prediction", public: false },
-              { name: "IoT Monitoring", path: "/iot-monitoring", public: false },
               { name: "Marketplace", path: "/marketplace", public: false },
               { name: "Voice Assistant", path: "/voice-assistant", public: false },
               { name: "Fertilizer AI", path: "/fertilizer-recommendation", public: false },
-              { name: "Pest Forecast", path: "/pest-prediction", public: false },
-              { name: "Dashboard", path: "/comprehensive-dashboard", public: false }
+              { name: "Pest Forecast", path: "/pest-prediction", public: false }
             ].filter(item => (item.public && !isAuthenticated) || (!item.public && isAuthenticated)).map((item, i) => (
               <motion.a
                 key={item.name}
@@ -179,26 +188,52 @@ const Index = () => {
               AI-Powered Smart Agriculture
             </motion.div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="block">India's First</span>
-              <span className="block gradient-text">AI + GIS Smart Farming</span>
-              <span className="block">Intelligence Platform</span>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
+              <motion.span
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="block"
+              >
+                India's First
+              </motion.span>
+              <motion.span
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+                className="block gradient-text drop-shadow-glow"
+              >
+                AI + GIS Smart Farming
+              </motion.span>
+              <motion.span
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7, duration: 0.8 }}
+                className="block"
+              >
+                Intelligence Platform
+              </motion.span>
             </h1>
 
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              Complete seed-to-market intelligence with multi-class disease detection, digital twin mapping,
-              yield prediction, IoT monitoring, and rural-accessible technology. Increase yields by 30%, reduce costs by 40%.
+              pests, nutrient deficiency, and fungal infections.
+              Increase yields by 30%, reduce costs by 40%.
             </p>
 
-            <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 group">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1, duration: 0.6 }}
+              className="flex flex-wrap gap-4"
+            >
+              <Button size="lg" className="bg-gradient-primary hover:shadow-glow-primary transition-all duration-300 group h-14 px-8 text-lg rounded-xl">
                 Start Free Trial
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="border-2 hover:shadow-glow-accent transition-all duration-300">
+              <Button size="lg" variant="outline" className="border-2 hover:shadow-glow-accent transition-all duration-300 h-14 px-8 text-lg rounded-xl glass">
                 Watch Demo
               </Button>
-            </div>
+            </motion.div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12">
@@ -242,32 +277,35 @@ const Index = () => {
               </motion.div>
 
               {/* Orbiting Icons */}
-              {[Brain, MapPin, Satellite, TrendingUp, Cloud, Zap].map((Icon, i) => (
+              {[Brain, MapPin, TrendingUp, Cloud, Zap].map((Icon, i) => (
                 <motion.div
                   key={i}
                   className="absolute inset-0 m-auto w-full h-full"
                   animate={{ rotate: 360 }}
                   transition={{
-                    duration: 20,
+                    duration: 30 + (i * 5), // Varying speeds for depth
                     repeat: Infinity,
                     ease: "linear",
                     delay: i * 0.5,
                   }}
                 >
                   <motion.div
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-card border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-glow-primary"
-                    whileHover={{ scale: 1.2 }}
-                    animate={{ y: [0, -10, 0] }}
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 glass-morphism rounded-2xl flex items-center justify-center shadow-glow-primary group cursor-pointer"
+                    whileHover={{ scale: 1.2, rotate: 15 }}
+                    animate={{
+                      y: [0, -15, 0],
+                      boxShadow: ["0 0 20px rgba(74, 222, 128, 0.2)", "0 0 40px rgba(74, 222, 128, 0.6)", "0 0 20px rgba(74, 222, 128, 0.2)"]
+                    }}
                     transition={{
-                      duration: 3,
+                      duration: 4,
                       repeat: Infinity,
-                      delay: i * 0.3,
+                      delay: i * 0.4,
                     }}
                     style={{
                       transformOrigin: '50% 250px',
                     }}
                   >
-                    <Icon className="w-8 h-8 text-primary" />
+                    <Icon className="w-8 h-8 text-primary drop-shadow-glow" />
                   </motion.div>
                 </motion.div>
               ))}
@@ -294,7 +332,7 @@ const Index = () => {
           </p>
           <div className="max-w-4xl mx-auto text-left space-y-4 mt-8 p-6 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50">
             <p className="text-muted-foreground">
-              AgriSphere AI is India's first comprehensive AI + GIS Smart Farming Intelligence Platform. We combine multi-class disease detection, digital twin technology, yield prediction, IoT monitoring, and end-to-end agricultural advisory to transform farming from seed to market.
+              AgriSphere AI is India's first comprehensive AI + GIS Smart Farming Intelligence Platform. We combine multi-class disease detection, digital twin technology, yield prediction, and end-to-end agricultural advisory to transform farming from seed to market.
             </p>
             <p className="text-muted-foreground">
               Our platform supports offline mode for villages, Hindi voice commands, government scheme recommendations, farmer-buyer marketplace, and blockchain traceability. From small family farms to large commercial operations, we provide rural-accessible technology that increases yields by 30% while reducing costs by 40%.
@@ -596,7 +634,7 @@ const Index = () => {
               {
                 name: "Anita Sharma",
                 location: "Maharashtra, India",
-                text: "The GIS digital twin mapped my field perfectly. IoT sensors + smart irrigation cut water usage by 45%. Marketplace got me ₹2000/quintal extra!",
+                text: "The GIS digital twin mapped my field perfectly. AI-powered management cut water usage by 45%. Marketplace got me ₹2000/quintal extra!",
                 rating: 5,
                 crop: "Cotton",
                 benefit: "45% water savings"
@@ -682,7 +720,6 @@ const Index = () => {
               { name: "LSTM Networks", desc: "Time series analysis" },
               { name: "Gradient Boosting", desc: "Advanced regression" },
               { name: "Mapbox GIS", desc: "Digital twin mapping" },
-              { name: "Firebase IoT", desc: "Real-time sensors" },
               { name: "Multi-class CNN", desc: "Disease detection" },
               { name: "Blockchain", desc: "Supply traceability" },
               { name: "Voice Recognition", desc: "Hindi commands" },
