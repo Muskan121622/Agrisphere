@@ -1,7 +1,13 @@
 import OpenAI from 'openai';
 
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+if (!apiKey) {
+  console.warn('⚠️ VITE_OPENAI_API_KEY is missing. AI features will use fallback responses.');
+}
+
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  apiKey: apiKey || 'dummy_key_to_prevent_initialization_error',
   dangerouslyAllowBrowser: true,
   defaultHeaders: {
     'OpenAI-Beta': 'assistants=v1'
@@ -11,7 +17,7 @@ const openai = new OpenAI({
 export const analyzeImage = async (imageBase64: string, analysisType: 'disease' | 'soil' | 'pest' = 'disease') => {
   try {
     const prompt = getAnalysisPrompt(analysisType);
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -41,7 +47,7 @@ export const analyzeImage = async (imageBase64: string, analysisType: 'disease' 
 export const chatWithAI = async (message: string, context: string = 'general') => {
   try {
     const systemPrompt = getSystemPrompt(context);
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -55,7 +61,7 @@ export const chatWithAI = async (message: string, context: string = 'general') =
     return response.choices[0]?.message?.content || "Sorry, I couldn't process your request.";
   } catch (error) {
     console.error('OpenAI Chat Error:', error);
-    
+
     // Fallback responses for demo
     const fallbackResponses = {
       'hi': 'Hello! I am AgriSphere AI. How can I help you with farming today? / नमस्ते! मैं AgriSphere AI हूं। आज मैं आपकी खेती में कैसे मदद कर सकता हूं?',
@@ -64,7 +70,7 @@ export const chatWithAI = async (message: string, context: string = 'general') =
       'weather': 'Weather conditions are important for farming. I can help you plan based on weather forecasts.',
       'default': 'I am AgriSphere AI, your farming assistant. I can help with crop diseases, weather advice, and farming techniques. / मैं AgriSphere AI हूं, आपका कृषि सहायक। मैं फसल रोग, मौसम सलाह और खेती तकनीकों में मदद कर सकता हूं।'
     };
-    
+
     const lowerMessage = message.toLowerCase();
     if (lowerMessage.includes('hi') || lowerMessage.includes('hello')) {
       return fallbackResponses.hi;
@@ -95,7 +101,7 @@ export const translateToHindi = async (text: string) => {
     return response.choices[0]?.message?.content || text;
   } catch (error) {
     console.error('Translation Error:', error);
-    
+
     // Simple fallback translations
     const translations: { [key: string]: string } = {
       'Hello! I am AgriSphere AI. How can I help you with farming today?': 'नमस्ते! मैं AgriSphere AI हूं। आज मैं आपकी खेती में कैसे मदद कर सकता हूं?',
@@ -103,7 +109,7 @@ export const translateToHindi = async (text: string) => {
       'For disease detection, please upload an image': 'रोग की पहचान के लिए, कृपया अपनी फसल की तस्वीर अपलोड करें',
       'Weather conditions are important for farming': 'मौसम की स्थिति खेती के लिए महत्वपूर्ण है'
     };
-    
+
     return translations[text] || text;
   }
 };
@@ -117,7 +123,7 @@ const getAnalysisPrompt = (type: string) => {
 3. Treatment recommendations
 4. Prevention tips
 Format as JSON with fields: disease, severity, treatment, prevention`;
-    
+
     case 'soil':
       return `Analyze this soil image for texture, health, and nutrient indicators. Provide:
 1. Soil type assessment
@@ -125,7 +131,7 @@ Format as JSON with fields: disease, severity, treatment, prevention`;
 3. Nutrient recommendations
 4. Improvement suggestions
 Format as JSON with fields: soilType, health, nutrients, improvements`;
-    
+
     case 'pest':
       return `Identify pests in this crop image. Provide:
 1. Pest identification
@@ -133,7 +139,7 @@ Format as JSON with fields: soilType, health, nutrients, improvements`;
 3. Treatment methods
 4. Organic alternatives
 Format as JSON with fields: pest, damage, treatment, organic`;
-    
+
     default:
       return "Analyze this agricultural image and provide detailed insights.";
   }
