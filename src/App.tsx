@@ -12,10 +12,8 @@ const Index = lazy(() => import("./pages/Index"));
 const DiseaseDetection = lazy(() => import("./pages/DiseaseDetection"));
 const DigitalTwin = lazy(() => import("./pages/DigitalTwin"));
 const YieldPrediction = lazy(() => import("./pages/YieldPrediction"));
-const IoTMonitoring = lazy(() => import("./pages/IoTMonitoring"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const VoiceAssistant = lazy(() => import("./pages/VoiceAssistant"));
-const ComprehensiveDashboard = lazy(() => import("./pages/ComprehensiveDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./components/Login"));
 const Signup = lazy(() => import("./components/Signup"));
@@ -79,12 +77,10 @@ const App = () => {
               <Route path="/disease-detection" element={<DiseaseDetection />} />
               {/* Protected routes */}
               <Route path="/yield-prediction" element={<ProtectedRoute><YieldPrediction /></ProtectedRoute>} />
-              <Route path="/iot-monitoring" element={<ProtectedRoute><IoTMonitoring /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/voice-assistant" element={<ProtectedRoute><VoiceAssistant /></ProtectedRoute>} />
               <Route path="/fertilizer-recommendation" element={<ProtectedRoute><FertilizerRecommendation /></ProtectedRoute>} />
               <Route path="/pest-prediction" element={<ProtectedRoute><PestPrediction /></ProtectedRoute>} />
-              <Route path="/comprehensive-dashboard" element={<ProtectedRoute><ComprehensiveDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

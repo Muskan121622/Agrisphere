@@ -1,3 +1,58 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_GEMINI_VISION_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+
+export async function validatePlantImage(imageFile: File): Promise<{ isPlant: boolean; error?: string }> {
+  if (!genAI) {
+    console.warn("Gemini API key not found for frontend validation. Bypassing...");
+    return { isPlant: true };
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+    const base64Data = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(imageFile);
+    });
+
+    const base64Image = base64Data.split(",")[1];
+
+    const prompt = `
+      TASK: VALIDATE IF THE IMAGE IS RELATED TO AGRICULTURE.
+      - Respond YES if the image shows a plant part (leaf, stem, root, soil, fruit, flower, crop).
+      - Respond NO if the image shows anything else (people, animals, buildings, cars, random objects, text, or non-agricultural scenery).
+      - BE STRICT. If unsure, respond NO.
+      - YOUR RESPONSE MUST BE EXACTLY ONE WORD: YES or NO.
+    `;
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Image,
+          mimeType: imageFile.type,
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const text = response.text().trim().toUpperCase();
+    console.log("Gemini Frontend Validation Result:", text);
+
+    if (text.includes("YES") && !text.includes("NO")) {
+      return { isPlant: true };
+    }
+
+    return { isPlant: false };
+  } catch (error: any) {
+    console.error("Gemini Frontend Validation Error:", error);
+    return { isPlant: true };
+  }
+}
+
 export interface DetectionResult {
   disease: string;
   confidence: number;
@@ -85,32 +140,43 @@ export class EnhancedDiseaseDetector {
 
     try {
       console.log('Starting disease detection for:', imageFile.name);
-      
+
+      // Validate if the image is a plant using Gemini
+      const validationResult = await validatePlantImage(imageFile);
+      if (!validationResult.isPlant) {
+        throw new Error('NOT_A_PLANT');
+      }
+
       // Create FormData to send the image file
       const formData = new FormData();
       formData.append('image', imageFile);
 
       console.log('Sending request to API...');
-      
+
       // Make API call to the backend
       const response = await fetch('http://localhost:5000/detect-disease', {
         method: 'POST',
         body: formData,
       });
-      
+
       console.log('API response status:', response.status);
 
+      const responseData = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        if (responseData.is_plant === false) {
+          throw new Error('NOT_A_PLANT');
+        }
+        throw new Error(responseData.error || `API request failed: ${response.status}`);
       }
 
-      const apiResult = await response.json();
-      console.log('API result:', apiResult);
+      console.log('API result:', responseData);
+      const apiResult = responseData;
 
       // Use the affected part from the API result, fallback to leaf if not provided
       // For healthy plants, we still want to show a plant part for context
-      const plantPart = apiResult.affectedPart && apiResult.affectedPart !== 'none' && apiResult.affectedPart !== 'unknown' 
-        ? apiResult.affectedPart 
+      const plantPart = apiResult.affectedPart && apiResult.affectedPart !== 'none' && apiResult.affectedPart !== 'unknown'
+        ? apiResult.affectedPart
         : (apiResult.disease === 'healthy' ? 'leaf' : this.detectPlantPart(imageFile.name));
 
       // Generate additional results based on the API result
@@ -137,29 +203,9 @@ export class EnhancedDiseaseDetector {
           processingTime
         }
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error detecting disease:', error);
-      // Fallback to mock results if API fails
-      const plantPart = this.detectPlantPart(imageFile.name);
-      const diseases = this.generateDiseaseResults(plantPart);
-      const pests = this.generatePestResults(plantPart);
-      const nutrientDeficiency = this.generateNutrientResults(plantPart);
-      const soilAnalysis = this.generateSoilAnalysis();
-      const processingTime = Date.now() - startTime;
-      const overallHealth = this.calculateOverallHealth(diseases, pests, nutrientDeficiency, soilAnalysis);
-
-      return {
-        diseases,
-        pests,
-        nutrientDeficiency,
-        soilAnalysis,
-        overallHealth,
-        imageAnalysis: {
-          plantPart,
-          quality: this.assessImageQuality(),
-          processingTime
-        }
-      };
+      throw error;
     }
   }
 
@@ -169,7 +215,7 @@ export class EnhancedDiseaseDetector {
     if (name.includes('stem')) return 'stem';
     if (name.includes('fruit')) return 'fruit';
     if (name.includes('soil')) return 'soil';
-    
+
     // Default to leaf for plant disease detection as most samples are leaf-based
     return 'leaf';
   }
@@ -282,7 +328,7 @@ export class EnhancedDiseaseDetector {
 
     const relevantDiseases = diseaseDatabase[plantPart as keyof typeof diseaseDatabase] || diseaseDatabase.leaf;
     const numDiseases = Math.floor(Math.random() * 2) + 1;
-    
+
     return relevantDiseases.slice(0, numDiseases).map(disease => ({
       disease: disease.disease,
       confidence: 0.75 + Math.random() * 0.2,
@@ -334,7 +380,7 @@ export class EnhancedDiseaseDetector {
         damage: pestInfo.damage
       }];
     }
-    
+
     return [];
   }
 
@@ -376,14 +422,14 @@ export class EnhancedDiseaseDetector {
         affectedGrowth: nutrientInfo.affectedGrowth
       }];
     }
-    
+
     return [];
   }
 
   private generateSoilAnalysis(): SoilAnalysisResult {
     const textures: ('clay' | 'sandy' | 'loamy' | 'silt')[] = ['clay', 'sandy', 'loamy', 'silt'];
     const texture = textures[Math.floor(Math.random() * textures.length)];
-    
+
     const soilProperties = {
       clay: { ph: 6.8, moisture: 65, organicMatter: 3.2, drainage: 'poor', fertility: 'high' },
       sandy: { ph: 6.2, moisture: 25, organicMatter: 1.8, drainage: 'excellent', fertility: 'low' },
@@ -392,7 +438,7 @@ export class EnhancedDiseaseDetector {
     };
 
     const props = soilProperties[texture];
-    
+
     return {
       texture,
       confidence: 0.80 + Math.random() * 0.15,
@@ -432,24 +478,24 @@ export class EnhancedDiseaseDetector {
     return recommendations[texture as keyof typeof recommendations] || [];
   }
 
-  private calculateOverallHealth(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult): { 
-    score: number; 
-    status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent'; 
-    recommendations: string[] 
+  private calculateOverallHealth(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult): {
+    score: number;
+    status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+    recommendations: string[]
   } {
     let score = 100;
     const recommendations: string[] = [];
 
     // Check if the plant is healthy with high confidence
     const isHealthy = diseases.length === 1 && diseases[0].disease === 'healthy' && diseases[0].confidence > 0.9;
-    
+
     if (isHealthy) {
       // For healthy plants with high confidence, give a high score regardless of other factors
       score = Math.min(100, 95 + Math.floor(diseases[0].confidence * 5));
       recommendations.push('Plant is healthy - continue current practices');
     } else {
       // For diseased plants or low confidence healthy classification, calculate normally
-      
+
       diseases.forEach(disease => {
         // Don't deduct points for healthy plants
         if (disease.disease !== 'healthy') {
@@ -486,9 +532,9 @@ export class EnhancedDiseaseDetector {
     }
 
     let status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent' = score >= 95 ? 'excellent' :
-                  score >= 85 ? 'good' :
-                  score >= 70 ? 'fair' :
-                  score >= 50 ? 'poor' : 'critical';
+      score >= 85 ? 'good' :
+        score >= 70 ? 'fair' :
+          score >= 50 ? 'poor' : 'critical';
 
     // Special case for high confidence healthy plants
     if (isHealthy) {
@@ -498,7 +544,7 @@ export class EnhancedDiseaseDetector {
       // Check if all recommendations are positive (for healthy plants)
       const hasNegativeRecommendations = recommendations.some(rec => rec.startsWith('Address') || rec.startsWith('Implement') || rec.startsWith('Correct'));
       const hasMonitoringRecommendations = recommendations.some(rec => rec.startsWith('Monitor for'));
-      
+
       if (!hasNegativeRecommendations && !hasMonitoringRecommendations) {
         // All recommendations are positive, so plant is healthy
         recommendations.splice(0, recommendations.length, 'Plant health is excellent - maintain current practices');

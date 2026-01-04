@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Upload, Camera, Zap, Bug, Leaf, Apple, AlertTriangle, 
+import {
+  Upload, Camera, Zap, Bug, Leaf, Apple, AlertTriangle,
   CheckCircle, TrendingUp, Droplets, Thermometer, Activity,
   MapPin, BarChart3, Target, Brain
 } from 'lucide-react';
@@ -17,14 +17,15 @@ interface EnhancedImageAnalysisProps {
   onResultsChange?: (results: MultiClassResult | null) => void;
 }
 
-const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({ 
+const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
   analysisType = 'comprehensive',
-  onResultsChange 
+  onResultsChange
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<MultiClassResult | null>(null);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [detector] = useState(() => new EnhancedDiseaseDetector());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +34,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
     if (file && file.type.startsWith('image/')) {
       setSelectedFile(file);
       setResults(null);
+      setError(null);
     }
   }, []);
 
@@ -41,6 +43,8 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
 
     setIsAnalyzing(true);
     setProgress(0);
+    setError(null);
+    setResults(null);
 
     try {
       // Initialize detector
@@ -54,14 +58,19 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
 
       // Perform multi-class analysis
       const analysisResults = await detector.detectMultiClass(selectedFile);
-      
+
       clearInterval(progressInterval);
       setProgress(100);
-      
+
       setResults(analysisResults);
       onResultsChange?.(analysisResults);
-    } catch (error) {
-      console.error('Analysis failed:', error);
+    } catch (err: any) {
+      console.error('Analysis failed:', err);
+      if (err.message === 'NOT_A_PLANT') {
+        setError('Not correct! The uploaded image is not a plant part or soil.');
+      } else {
+        setError(err.message || 'Analysis failed. Please check if the API server is running.');
+      }
     } finally {
       setIsAnalyzing(false);
       setTimeout(() => setProgress(0), 1000);
@@ -101,7 +110,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
               onChange={handleFileSelect}
               className="hidden"
             />
-            
+
             {selectedFile ? (
               <div className="space-y-4">
                 <img
@@ -127,7 +136,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                 </div>
               </div>
             )}
-            
+
             <div className="flex gap-4 justify-center mt-4">
               <Button
                 onClick={() => fileInputRef.current?.click()}
@@ -137,7 +146,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                 <Upload className="w-4 h-4" />
                 Choose Image
               </Button>
-              
+
               <Button
                 onClick={handleAnalyze}
                 disabled={!selectedFile || isAnalyzing}
@@ -162,6 +171,13 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
             </p>
           </div>
         )}
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700 animate-in fade-in slide-in-from-top-2">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <p className="font-medium text-sm">{error}</p>
+          </div>
+        )}
       </Card>
 
       {/* Results Section */}
@@ -175,7 +191,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                 {results.overallHealth.score}/100
               </Badge>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -186,7 +202,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                   {results.overallHealth.status}
                 </p>
               </div>
-              
+
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="w-5 h-5 text-primary" />
@@ -291,7 +307,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                               ))}
                             </ul>
                           </div>
-                          
+
                           <div>
                             <h5 className="font-medium mb-2">Economic Impact</h5>
                             <p className="text-xs bg-orange-50 dark:bg-orange-950/30 p-2 rounded">
@@ -333,7 +349,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                           <p className="text-sm bg-red-50 dark:bg-red-950/30 p-3 rounded">
                             {pest.damage}
                           </p>
-                          
+
                           <h5 className="font-medium mb-2 mt-4">Lifecycle</h5>
                           <p className="text-sm">{pest.lifecycle}</p>
                         </div>
@@ -407,7 +423,7 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                           <p className="text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded mb-3">
                             {nutrient.fertilizer}
                           </p>
-                          
+
                           <h5 className="font-medium mb-2">Soil Amendment</h5>
                           <p className="text-sm">{nutrient.soilAmendment}</p>
                         </div>

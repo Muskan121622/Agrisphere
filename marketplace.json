@@ -1,0 +1,50 @@
+[
+  {
+    "farmer": "muskan",
+    "crop": "rice",
+    "variety": "",
+    "quantity": "50 quintals",
+    "price": "2400",
+    "location": "bihar",
+    "contact": "7739935256",
+    "image": "https://images.unsplash.com/photo-1590779033100-9f60705a2f3b?auto=format&fit=crop&q=80&w=400",
+    "id": 4,
+    "date": "2026-01-04"
+  },
+  {
+    "id": 1,
+    "farmer": "Rajesh Kumar",
+    "crop": "Rice",
+    "variety": "Basmati 1121",
+    "quantity": "50 Quintals",
+    "price": 2600,
+    "location": "Amritsar, Punjab",
+    "contact": "+91 98765 43210",
+    "image": "https://images.unsplash.com/photo-1536671077714-38827fa16701?auto=format&fit=crop&q=80&w=400",
+    "date": "2026-01-04"
+  },
+  {
+    "id": 2,
+    "farmer": "Anita Sharma",
+    "crop": "Tomato",
+    "variety": "Abhinav Hybrid",
+    "quantity": "20 Crates",
+    "price": 1800,
+    "location": "Nashik, Maharashtra",
+    "contact": "+91 87654 32109",
+    "image": "https://images.unsplash.com/photo-1590779033100-9f60705a2f3b?auto=format&fit=crop&q=80&w=400",
+    "date": "2026-01-03"
+  },
+  {
+    "id": 3,
+    "farmer": "Vikram Patel",
+    "crop": "Wheat",
+    "variety": "HD 2967",
+    "quantity": "100 Quintals",
+    "price": 2450,
+    "location": "Indore, MP",
+    "contact": "+91 76543 21098",
+    "image": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400",
+    "date": "2026-01-02"
+  }
+]
