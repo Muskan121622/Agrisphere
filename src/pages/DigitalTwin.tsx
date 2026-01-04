@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Map, Layers, Droplets, Bug, TrendingUp, Satellite, ArrowLeft, MapPin, Activity, CheckCircle2 } from "lucide-react";
+import { Map, Layers, Droplets, Bug, TrendingUp, ArrowLeft, MapPin, Activity, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -180,7 +180,6 @@ const DigitalTwin = () => {
     { name: "Satellite Imagery", type: "Base Layer", update: "Daily" },
     { name: "Soil Health", type: "Analysis Layer", update: "Weekly" },
     { name: "Crop Health", type: "Monitoring Layer", update: "Real-time" },
-    { name: "Irrigation Status", type: "IoT Layer", update: "Live" },
     { name: "Weather Data", type: "Environmental Layer", update: "Hourly" },
     { name: "Pest Alerts", type: "Alert Layer", update: "As needed" }
   ];
@@ -220,7 +219,7 @@ const DigitalTwin = () => {
               multi-layer visualization, and real-time monitoring for precision agriculture.
               <br />
               <span className="text-primary font-semibold mt-2 block">
-                ✨ Featuring: Farm Boundaries • Soil Zones • Irrigation Planning • Pest Risk Maps • NDVI Crop Health • Weather Stations
+                ✨ Featuring: Farm Boundaries • Soil Zones • Irrigation Planning • Pest Risk Maps • NDVI Crop Health • Weather Analysis
               </span>
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
@@ -334,7 +333,7 @@ const DigitalTwin = () => {
                 }}
                 disabled={isInitializing}
               >
-                <Satellite className="mr-2 w-5 h-5" />
+                <MapPin className="mr-2 w-5 h-5" />
                 Quick Demo
               </Button>
             </div>
@@ -494,8 +493,8 @@ const DigitalTwin = () => {
                         <div className="text-sm text-muted-foreground">{area.id}</div>
                       </div>
                       <div className={`px-2 py-1 rounded text-xs font-medium ${area.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
-                          area.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
+                        area.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
                         }`}>
                         {area.riskLevel} risk
                       </div>

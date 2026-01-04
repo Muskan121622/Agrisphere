@@ -174,9 +174,6 @@ export function GISMap({ farmData }: GISMapProps) {
             <p><strong>Efficiency:</strong> ${zone.efficiency.toFixed(1)}%</p>
             <p><strong>Water Req:</strong> ${zone.waterRequirement.toLocaleString()} L/day</p>
             <p><strong>Status:</strong> <span class="capitalize">${zone.status}</span></p>
-            <div class="mt-2">
-              <strong>Soil Moisture:</strong> ${zone.sensors.soilMoisture.toFixed(1)}%
-            </div>
           </div>
         `);
 

@@ -179,4 +179,16 @@ All colors MUST be HSL.
     0%, 100% { opacity: 1; filter: blur(20px); }
     50% { opacity: 0.8; filter: blur(30px); }
   }
+
+  .glass {
+    @apply bg-background/20 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-morphism {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl;
+  }
+
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
 }

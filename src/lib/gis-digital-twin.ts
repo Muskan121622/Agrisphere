@@ -52,11 +52,6 @@ export interface IrrigationZone {
     duration: number; // minutes
     frequency: 'daily' | 'alternate' | 'weekly';
   }[];
-  sensors: {
-    soilMoisture: number;
-    temperature: number;
-    humidity: number;
-  };
   status: 'active' | 'inactive' | 'maintenance';
 }
 
@@ -185,7 +180,7 @@ export class GISDigitalTwin {
 
     const farmBoundary = this.createFieldBoundary('main-field', farmName, boundaryCoordinates);
     const farmId = `farm-${Date.now()}`;
-    
+
     this.farmData = {
       farmId,
       farmName,
@@ -209,12 +204,12 @@ export class GISDigitalTwin {
     // Convert to turf coordinates format
     const turfCoords = coordinates.map(coord => [coord.lng, coord.lat]);
     turfCoords.push(turfCoords[0]); // Close the polygon
-    
+
     const polygon = turf.polygon([turfCoords]);
     const area = turf.area(polygon) / 10000; // Convert to hectares
     const perimeter = turf.length(turf.polygonToLine(polygon), { units: 'meters' });
     const centroidPoint = turf.centroid(polygon);
-    
+
     return {
       id,
       name,
@@ -231,7 +226,7 @@ export class GISDigitalTwin {
   private async generateSoilZones(boundary: FieldBoundary): Promise<SoilZone[]> {
     const zones: SoilZone[] = [];
     const soilTypes: ('clay' | 'sandy' | 'loamy' | 'silt')[] = ['clay', 'sandy', 'loamy', 'silt'];
-    
+
     // Create a grid-based soil zone mapping
     const bbox = this.getBoundingBox(boundary.coordinates);
     const gridSize = 4; // 4x4 grid
@@ -251,10 +246,10 @@ export class GISDigitalTwin {
         if (this.polygonIntersects(cellCoords, boundary.coordinates)) {
           const soilType = soilTypes[Math.floor(Math.random() * soilTypes.length)];
           const soilProperties = this.getSoilProperties(soilType);
-          
+
           zones.push({
             id: `soil-zone-${i}-${j}`,
-            name: `${soilType.charAt(0).toUpperCase() + soilType.slice(1)} Zone ${i+1}-${j+1}`,
+            name: `${soilType.charAt(0).toUpperCase() + soilType.slice(1)} Zone ${i + 1}-${j + 1}`,
             coordinates: cellCoords,
             soilType,
             ...soilProperties,
@@ -336,7 +331,7 @@ export class GISDigitalTwin {
   private async generateIrrigationZones(boundary: FieldBoundary): Promise<IrrigationZone[]> {
     const zones: IrrigationZone[] = [];
     const irrigationTypes: ('drip' | 'sprinkler' | 'pivot')[] = ['drip', 'sprinkler', 'pivot'];
-    
+
     // Divide farm into irrigation zones based on topography and crop requirements
     const numZones = Math.min(6, Math.max(3, Math.floor(boundary.area / 2))); // 3-6 zones
     const zoneCoords = this.divideIntoZones(boundary.coordinates, numZones);
@@ -344,7 +339,7 @@ export class GISDigitalTwin {
     zoneCoords.forEach((coords, index) => {
       const irrigationType = irrigationTypes[index % irrigationTypes.length];
       const efficiency = this.getIrrigationEfficiency(irrigationType);
-      
+
       zones.push({
         id: `irrigation-zone-${index + 1}`,
         name: `${irrigationType.charAt(0).toUpperCase() + irrigationType.slice(1)} Zone ${index + 1}`,
@@ -353,11 +348,6 @@ export class GISDigitalTwin {
         efficiency,
         waterRequirement: this.calculateWaterRequirement(coords, irrigationType),
         schedule: this.generateIrrigationSchedule(irrigationType),
-        sensors: {
-          soilMoisture: 40 + Math.random() * 40, // 40-80%
-          temperature: 22 + Math.random() * 8, // 22-30°C
-          humidity: 50 + Math.random() * 30 // 50-80%
-        },
         status: Math.random() > 0.1 ? 'active' : 'maintenance' // 90% active
       });
     });
@@ -415,19 +405,19 @@ export class GISDigitalTwin {
       'aphids', 'caterpillars', 'beetles', 'mites', 'thrips', 'whiteflies',
       'cutworms', 'armyworms', 'bollworms', 'stem borers'
     ];
-    
+
     // Generate 3-5 pest-prone areas based on environmental factors
     const numAreas = Math.floor(Math.random() * 3) + 3;
-    
+
     for (let i = 0; i < numAreas; i++) {
       const pestType = pests[Math.floor(Math.random() * pests.length)];
       const riskLevel = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high';
-      
+
       // Create circular pest-prone areas
       const center = this.getRandomPointInPolygon(boundary.coordinates);
       const radius = 50 + Math.random() * 100; // 50-150 meters
       const areaCoords = this.createCircularArea(center, radius);
-      
+
       areas.push({
         id: `pest-area-${i + 1}`,
         name: `${pestType.charAt(0).toUpperCase() + pestType.slice(1)} Risk Zone ${i + 1}`,
@@ -496,7 +486,7 @@ export class GISDigitalTwin {
       const crop = crops[index % crops.length];
       const plantingDate = new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000); // Last 60 days
       const expectedHarvest = new Date(plantingDate.getTime() + crop.duration * 24 * 60 * 60 * 1000);
-      
+
       zones.push({
         id: `crop-zone-${index + 1}`,
         name: `${crop.type.charAt(0).toUpperCase() + crop.type.slice(1)} Zone ${index + 1}`,
@@ -541,7 +531,7 @@ export class GISDigitalTwin {
 
     const baseYield = baseYields[cropType as keyof typeof baseYields] || 3000;
     const variability = 0.8 + Math.random() * 0.4; // ±20% variation
-    
+
     return Math.round(baseYield * variability * area);
   }
 
@@ -553,7 +543,7 @@ export class GISDigitalTwin {
 
     const numFactors = Math.floor(Math.random() * 3); // 0-2 stress factors
     const stressFactors: string[] = [];
-    
+
     for (let i = 0; i < numFactors; i++) {
       const factor = allStressFactors[Math.floor(Math.random() * allStressFactors.length)];
       if (!stressFactors.includes(factor)) {
@@ -566,13 +556,13 @@ export class GISDigitalTwin {
 
   private async generateWeatherMicroclimates(boundary: FieldBoundary): Promise<WeatherMicroclimate[]> {
     const microclimates: WeatherMicroclimate[] = [];
-    
+
     // Create 2-4 weather monitoring points across the farm
     const numPoints = Math.min(4, Math.max(2, Math.floor(boundary.area / 5)));
-    
+
     for (let i = 0; i < numPoints; i++) {
       const location = this.getRandomPointInPolygon(boundary.coordinates);
-      
+
       microclimates.push({
         id: `weather-${i + 1}`,
         name: `Weather Station ${i + 1}`,
@@ -610,12 +600,12 @@ export class GISDigitalTwin {
 
   private generateRoadNetwork(boundary: FieldBoundary): GISCoordinate[][] {
     const roads: GISCoordinate[][] = [];
-    
+
     // Main access road
     const center = boundary.centroid;
     const edge = boundary.coordinates[0];
     roads.push([center, edge]);
-    
+
     // Internal farm roads
     const numRoads = Math.floor(boundary.area / 10) + 1;
     for (let i = 0; i < numRoads; i++) {
@@ -630,13 +620,13 @@ export class GISDigitalTwin {
   private generateBuildings(boundary: FieldBoundary) {
     const buildings = [];
     const buildingTypes: ('storage' | 'processing' | 'office' | 'greenhouse')[] = ['storage', 'processing', 'office', 'greenhouse'];
-    
+
     const numBuildings = Math.min(5, Math.max(2, Math.floor(boundary.area / 8)));
-    
+
     for (let i = 0; i < numBuildings; i++) {
       const center = this.getRandomPointInPolygon(boundary.coordinates);
       const buildingCoords = this.createRectangularArea(center, 20, 15); // 20x15 meter building
-      
+
       buildings.push({
         type: buildingTypes[i % buildingTypes.length],
         coordinates: buildingCoords
@@ -649,13 +639,13 @@ export class GISDigitalTwin {
   private generateWaterSources(boundary: FieldBoundary) {
     const sources = [];
     const sourceTypes: ('well' | 'pond' | 'river' | 'canal')[] = ['well', 'pond', 'river', 'canal'];
-    
+
     const numSources = Math.min(3, Math.max(1, Math.floor(boundary.area / 15)));
-    
+
     for (let i = 0; i < numSources; i++) {
       const location = this.getRandomPointInPolygon(boundary.coordinates);
       const sourceType = sourceTypes[i % sourceTypes.length];
-      
+
       sources.push({
         type: sourceType,
         coordinates: location,
@@ -670,7 +660,7 @@ export class GISDigitalTwin {
   private getBoundingBox(coordinates: GISCoordinate[]) {
     const lats = coordinates.map(c => c.lat);
     const lngs = coordinates.map(c => c.lng);
-    
+
     return {
       minLat: Math.min(...lats),
       maxLat: Math.max(...lats),
@@ -683,9 +673,9 @@ export class GISDigitalTwin {
     // Simplified intersection check - in real implementation, use proper GIS library
     const bbox1 = this.getBoundingBox(poly1);
     const bbox2 = this.getBoundingBox(poly2);
-    
+
     return !(bbox1.maxLat < bbox2.minLat || bbox1.minLat > bbox2.maxLat ||
-             bbox1.maxLng < bbox2.minLng || bbox1.minLng > bbox2.maxLng);
+      bbox1.maxLng < bbox2.minLng || bbox1.minLng > bbox2.maxLng);
   }
 
   private calculatePolygonArea(coordinates: GISCoordinate[]): number {
@@ -699,13 +689,13 @@ export class GISDigitalTwin {
     // Simplified zone division - in real implementation, use advanced spatial algorithms
     const zones: GISCoordinate[][] = [];
     const bbox = this.getBoundingBox(coordinates);
-    
+
     const cols = Math.ceil(Math.sqrt(numZones));
     const rows = Math.ceil(numZones / cols);
-    
+
     const cellWidth = (bbox.maxLng - bbox.minLng) / cols;
     const cellHeight = (bbox.maxLat - bbox.minLat) / rows;
-    
+
     for (let i = 0; i < cols && zones.length < numZones; i++) {
       for (let j = 0; j < rows && zones.length < numZones; j++) {
         const zoneCoords: GISCoordinate[] = [
@@ -714,19 +704,19 @@ export class GISDigitalTwin {
           { lat: bbox.minLat + (j + 1) * cellHeight, lng: bbox.minLng + (i + 1) * cellWidth },
           { lat: bbox.minLat + (j + 1) * cellHeight, lng: bbox.minLng + i * cellWidth }
         ];
-        
+
         if (this.polygonIntersects(zoneCoords, coordinates)) {
           zones.push(zoneCoords);
         }
       }
     }
-    
+
     return zones;
   }
 
   private getRandomPointInPolygon(coordinates: GISCoordinate[]): GISCoordinate {
     const bbox = this.getBoundingBox(coordinates);
-    
+
     // Simple random point generation - in real implementation, ensure point is inside polygon
     return {
       lat: bbox.minLat + Math.random() * (bbox.maxLat - bbox.minLat),
@@ -737,25 +727,25 @@ export class GISDigitalTwin {
   private createCircularArea(center: GISCoordinate, radius: number): GISCoordinate[] {
     const points: GISCoordinate[] = [];
     const numPoints = 16;
-    
+
     for (let i = 0; i < numPoints; i++) {
       const angle = (i * 2 * Math.PI) / numPoints;
       const lat = center.lat + (radius / 111000) * Math.cos(angle); // Approximate conversion
       const lng = center.lng + (radius / (111000 * Math.cos(center.lat * Math.PI / 180))) * Math.sin(angle);
-      
+
       points.push({ lat, lng });
     }
-    
+
     return points;
   }
 
   private createRectangularArea(center: GISCoordinate, width: number, height: number): GISCoordinate[] {
     const halfWidth = width / 2;
     const halfHeight = height / 2;
-    
+
     const latOffset = halfHeight / 111000; // Approximate conversion
     const lngOffset = halfWidth / (111000 * Math.cos(center.lat * Math.PI / 180));
-    
+
     return [
       { lat: center.lat - latOffset, lng: center.lng - lngOffset },
       { lat: center.lat - latOffset, lng: center.lng + lngOffset },
@@ -787,7 +777,7 @@ export class GISDigitalTwin {
 
   private async analyzeOptimalCropZones() {
     const crops = ['wheat', 'rice', 'maize', 'cotton', 'soybean'];
-    
+
     return crops.map(crop => ({
       cropType: crop,
       suitabilityScore: 70 + Math.random() * 25, // 70-95%
@@ -802,7 +792,7 @@ export class GISDigitalTwin {
   private async analyzeIrrigationEfficiency() {
     const currentEfficiency = this.farmData!.irrigationZones
       .reduce((sum, zone) => sum + zone.efficiency, 0) / this.farmData!.irrigationZones.length;
-    
+
     return {
       currentEfficiency: Math.round(currentEfficiency * 10) / 10,
       optimizedLayout: this.farmData!.irrigationZones.map(zone => ({
@@ -817,16 +807,16 @@ export class GISDigitalTwin {
     const highRiskAreas = this.farmData!.pestProneAreas
       .filter(area => area.riskLevel === 'high')
       .map(area => area.coordinates);
-    
+
     return {
       highRiskAreas,
-      preventiveZones: highRiskAreas.map(area => 
+      preventiveZones: highRiskAreas.map(area =>
         area.map(coord => ({
           lat: coord.lat + 0.001,
           lng: coord.lng + 0.001
         }))
       ),
-      bufferZones: highRiskAreas.map(area => 
+      bufferZones: highRiskAreas.map(area =>
         area.map(coord => ({
           lat: coord.lat + 0.002,
           lng: coord.lng + 0.002
@@ -847,7 +837,7 @@ export class GISDigitalTwin {
 
   private generateIrrigationRecommendations(): string[] {
     return [
-      'Install soil moisture sensors for precise irrigation scheduling',
+      'Optimized irrigation scheduling based on field data',
       'Upgrade to drip irrigation in high-value crop areas',
       'Implement deficit irrigation strategies during non-critical growth stages',
       'Use weather-based irrigation scheduling',
@@ -878,7 +868,7 @@ export class GISDigitalTwin {
   // Export methods for integration with mapping libraries
   getMapboxLayers() {
     if (!this.farmData) return [];
-    
+
     return [
       {
         id: 'field-boundaries',
