@@ -22,6 +22,7 @@ const Signup = lazy(() => import("./components/Signup"));
 const FertilizerRecommendation = lazy(() => import("./pages/FertilizerRecommendation"));
 
 const PestPrediction = lazy(() => import("./pages/PestPrediction"));
+const AdvisoryHub = lazy(() => import("./pages/AdvisoryHub"));
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const App = () => {
               {/* Public routes for demo */}
               <Route path="/digital-twin" element={<DigitalTwin />} />
               <Route path="/disease-detection" element={<DiseaseDetection />} />
+              <Route path="/advisory-hub" element={<AdvisoryHub />} />
               {/* Protected routes */}
               <Route path="/yield-prediction" element={<ProtectedRoute><YieldPrediction /></ProtectedRoute>} />
               <Route path="/iot-monitoring" element={<ProtectedRoute><IoTMonitoring /></ProtectedRoute>} />
