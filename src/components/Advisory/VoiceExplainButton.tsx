@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface VoiceExplainButtonProps {
     textToExplain: string;
     context?: string; // e.g., "Scheme Details"
+    language?: "Hindi" | "English";
 }
 
-export const VoiceExplainButton: React.FC<VoiceExplainButtonProps> = ({ textToExplain, context }) => {
+export const VoiceExplainButton: React.FC<VoiceExplainButtonProps> = ({ textToExplain, context, language = "Hindi" }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -22,15 +23,15 @@ export const VoiceExplainButton: React.FC<VoiceExplainButtonProps> = ({ textToEx
 
         try {
             setIsLoading(true);
-            toast.info("AI is simplifying the explanation...");
+            toast.info(`AI is simplifying the explanation in ${language}...`);
 
-            const simplifiedText = await simplifyTextForFarmer(textToExplain, "Hindi");
+            const simplifiedText = await simplifyTextForFarmer(textToExplain, language);
 
             setIsLoading(false);
             setIsSpeaking(true);
-            toast.success("Playing explanation in Hindi");
+            toast.success(`Playing explanation in ${language}`);
 
-            speakText(simplifiedText, "hi-IN");
+            speakText(simplifiedText, language === "Hindi" ? "hi-IN" : "en-IN");
 
             // Reset state when speech ends (approximate or via event listener if we moved logic here)
             const utterance = new SpeechSynthesisUtterance(simplifiedText);

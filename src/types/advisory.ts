@@ -16,6 +16,12 @@ export interface Scheme {
     applyLink: string;
     description: string;
     docsRequired?: string[];
+
+    // Hindi/Regional Content
+    nameHi?: string;
+    benefitsHi?: string;
+    descriptionHi?: string;
+    docsRequiredHi?: string[];
 }
 
 export interface NewsArticle {

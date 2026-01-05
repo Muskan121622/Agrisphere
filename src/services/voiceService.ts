@@ -1,26 +1,47 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from "axios";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_GEMINI_VISION_API_KEY || import.meta.env.VITE_GROQ_CHATBOT_API_KEY; // Fallback or preferring one? User said "VITE_GOOGLE_GEMINI_VISION_API_KEY"
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_CHATBOT_API_KEY;
 
 /**
- * Simplifies complex scheme text into simple Hindi/English for farmers.
+ * Simplifies complex scheme text into simple Hindi/English for farmers using Groq.
  */
 export const simplifyTextForFarmer = async (text: string, language: "Hindi" | "English" = "Hindi"): Promise<string> => {
-    if (!GEMINI_API_KEY) return "AI Service Unavailable. displaying original text.";
+    if (!GROQ_API_KEY) {
+        console.error("Groq API Key missing");
+        return "Voice service unavailable. Please check configuration.";
+    }
 
     try {
         const prompt = `You are an expert agriculture advisor. Explain the following government scheme details to a farmer in simple ${language}. Keep it short (2-3 sentences max) and easy to understand. Do not invent facts. \n\nDetails: ${text}`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
-    } catch (error) {
-        console.error("AI Simplification Error:", error);
-        return "Could not simplify text. Please read the details above.";
+        const response = await axios.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            {
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: "You are a helpful agricultural assistant for Indian farmers." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 150
+            },
+            {
+                headers: {
+                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        return response.data.choices[0]?.message?.content || "Could not generate explanation.";
+
+    } catch (error: any) {
+        console.error("Groq AI Simplification Error:", error);
+        // Better error for debugging
+        if (error.response) {
+            return `Error: ${error.response.status} - ${error.response.data?.error?.message || "Unknown API Error"}`;
+        }
+        return `Error: ${error.message || "Could not simplify text"}`;
     }
 };
 

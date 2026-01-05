@@ -3,17 +3,20 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { NewsArticle } from "../../types/advisory";
 import { Calendar, User } from "lucide-react";
 
+import { VoiceExplainButton } from "./VoiceExplainButton";
+
 interface NewsCardProps {
     article: NewsArticle;
+    language?: "Hindi" | "English";
 }
 
-export const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
-    const formattedDate = new Date(article.publishedAt).toLocaleDateString('en-IN', {
+export const NewsCard: React.FC<NewsCardProps> = ({ article, language = "English" }) => {
+    const formattedDate = new Date(article.publishedAt).toLocaleDateString(language === "Hindi" ? 'hi-IN' : 'en-IN', {
         day: 'numeric', month: 'short', year: 'numeric'
     });
 
     return (
-        <Card className="overflow-hidden hover:shadow-md transition-all h-full flex flex-col">
+        <Card className="overflow-hidden hover:shadow-md transition-all h-full flex flex-col border-gray-200">
             <div className="relative h-48 w-full">
                 <img
                     src={article.urlToImage || "https://images.unsplash.com/photo-1625246333195-58ad9acf4256?q=80&w=2070&auto=format&fit=crop"}
@@ -32,14 +35,18 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
                 </h3>
                 <p className="text-sm text-gray-600 line-clamp-3">{article.description}</p>
             </CardContent>
-            <CardFooter className="pt-0">
+            <CardFooter className="pt-0 flex justify-between items-center">
+                <VoiceExplainButton
+                    textToExplain={`News Headline: ${article.title}. Summary: ${article.description}`}
+                    language={language}
+                />
                 <a
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-semibold text-green-600 hover:underline w-full text-right"
+                    className="text-sm font-semibold text-green-600 hover:underline"
                 >
-                    Read Full Article &rarr;
+                    {language === "Hindi" ? "पूरा लेख पढ़ें" : "Read Full Article"} &rarr;
                 </a>
             </CardFooter>
         </Card>

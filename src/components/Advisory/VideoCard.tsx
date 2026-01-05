@@ -18,7 +18,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Card className="cursor-pointer group overflow-hidden hover:shadow-xl transition-all border-none shadow-md">
+                <Card className="cursor-pointer group overflow-hidden hover:shadow-xl transition-all border-2 border-green-900 shadow-md">
                     <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
                         <img
                             src={video.thumbnail}
@@ -29,11 +29,11 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
                             <PlayCircle className="w-12 h-12 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all drop-shadow-lg" />
                         </div>
                     </div>
-                    <CardContent className="p-3 bg-white">
-                        <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-green-700 transition-colors">
+                    <CardContent className="p-4 bg-black">
+                        <h3 className="font-semibold text-base line-clamp-2 leading-tight text-white group-hover:text-green-400 transition-colors">
                             {video.title}
                         </h3>
-                        <p className="text-xs text-gray-500 mt-1">{video.channelTitle}</p>
+                        <p className="text-sm text-gray-400 mt-2">{video.channelTitle}</p>
                     </CardContent>
                 </Card>
             </DialogTrigger>
