@@ -13,7 +13,40 @@ from improved_voice_assistant import AgriVoiceAssistant
 import recommendation_engine
 import pest_engine
 import market_engine
+import market_engine
 import base64
+import uuid
+
+MARKET_DATA_FILE = "market_data.json"
+LISTINGS_FILE = "listings.json"
+COMMUNITY_DATA_FILE = "community_data.json"
+CROP_LOSS_FILE = "crop_loss_data.json"
+
+def load_crop_loss_data():
+    if os.path.exists(CROP_LOSS_FILE):
+        try:
+            with open(CROP_LOSS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_crop_loss_data(data):
+    with open(CROP_LOSS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+def load_community_data():
+    if os.path.exists(COMMUNITY_DATA_FILE):
+        try:
+            with open(COMMUNITY_DATA_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {"posts": [], "chat": []}
+    return {"posts": [], "chat": []}
+
+def save_community_data(data):
+    with open(COMMUNITY_DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -69,6 +102,7 @@ def verify_plant_with_groq(image_path):
         return True, f"Verification skipped (Error: {str(e)})" # Fail open on error
 
 app = Flask(__name__)
+CORS(app) # Enable CORS for all routes
 CORS(app)
 
 # Initialize voice assistant
@@ -697,6 +731,164 @@ def market_advisory():
         print(f"Market Advisory Error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/market-prices', methods=['POST'])
+def market_prices():
+    """
+    Get real-time market prices for specific location.
+    """
+    try:
+        data = request.json
+        if not data:
+             return jsonify({'error': 'No input data provided'}), 400
+             
+        state = data.get('state')
+        district = data.get('district')
+        market = data.get('market', 'General')
+        category = data.get('category', 'All')
+        
+        print(f"Fetching prices for: {state}, {district}, {market}")
+        
+        prices = market_engine.get_market_prices(state, district, market, category)
+        return jsonify(prices)
+        
+    except Exception as e:
+        print(f"Market Prices Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+LISTINGS_FILE = 'marketplace_listings.json'
+
+def load_listings():
+    if not os.path.exists(LISTINGS_FILE):
+        return []
+    try:
+        with open(LISTINGS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_listings(listings):
+    with open(LISTINGS_FILE, 'w') as f:
+        json.dump(listings, f, indent=4)
+
+@app.route('/listings', methods=['GET', 'POST'])
+def handle_listings():
+    if request.method == 'GET':
+        listings = load_listings()
+        return jsonify(listings)
+    
+    if request.method == 'POST':
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['farmerName', 'contactNumber', 'cropName', 'quantity', 'price', 'location']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing field: {field}'}), 400
+                
+        new_listing = {
+            'id': f"list_{int(datetime.now().timestamp())}",
+            'farmerName': data['farmerName'],
+            'contactNumber': data['contactNumber'],
+            'cropName': data['cropName'],
+            'quantity': data['quantity'],
+            'price': data['price'],
+            'location': data['location'],
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'verified': True # Mock verification
+        }
+        
+        listings = load_listings()
+        listings.insert(0, new_listing) # Add to top
+        save_listings(listings)
+        
+        return jsonify(new_listing), 201
+
+# Community Endpoints
+@app.route('/community/posts', methods=['GET', 'POST'])
+def handle_community_posts():
+    data = load_community_data()
+    if request.method == 'GET':
+        posts = data.get('posts', [])
+        return jsonify(posts)
+    
+    if request.method == 'POST':
+        new_post = request.json
+        if not new_post:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        new_post['id'] = str(uuid.uuid4())
+        new_post['timestamp'] = datetime.now().isoformat()
+        new_post['likes'] = 0
+        new_post['comments'] = []
+        
+        # Ensure posts list exists
+        if 'posts' not in data:
+            data['posts'] = []
+            
+        data['posts'].insert(0, new_post)
+        save_community_data(data)
+        return jsonify({'message': 'Post created', 'id': new_post['id']}), 201
+
+@app.route('/community/chat', methods=['GET', 'POST'])
+def handle_community_chat():
+    data = load_community_data()
+    if request.method == 'GET':
+        chat = data.get('chat', [])
+        return jsonify(chat)
+    
+    if request.method == 'POST':
+        msg = request.json
+        if not msg:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        msg['id'] = str(uuid.uuid4())
+        msg['timestamp'] = datetime.now().isoformat()
+        
+        # Ensure chat list exists
+        if 'chat' not in data:
+            data['chat'] = []
+            
+        data['chat'].append(msg)
+        # Keep only last 100 messages
+        if len(data['chat']) > 100:
+            data['chat'] = data['chat'][-100:]
+            
+        save_community_data(data)
+        return jsonify({'message': 'Message sent'}), 201
+
+@app.route('/community/posts/<post_id>/comments', methods=['POST'])
+def handle_post_comment(post_id):
+    data = load_community_data()
+    posts = data.get('posts', [])
+    
+    # Find post
+    post_index = next((index for (index, d) in enumerate(posts) if d["id"] == post_id), None)
+    
+    if post_index is None:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    comment_data = request.json
+    if not comment_data or 'text' not in comment_data:
+         return jsonify({'error': 'No comment text provided'}), 400
+         
+    new_comment = {
+        'id': str(uuid.uuid4()),
+        'author': comment_data.get('author', 'Anonymous'),
+        'text': comment_data['text'],
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # Initialize comments is it doesn't exist (legacy data support)
+    if 'comments' not in posts[post_index]:
+        posts[post_index]['comments'] = []
+        
+    posts[post_index]['comments'].append(new_comment)
+    data['posts'] = posts # Update data structure
+    
+    save_community_data(data)
+    return jsonify({'message': 'Comment added', 'comment': new_comment}), 201
+
 @app.route('/generate-digital-twin', methods=['POST'])
 def generate_digital_twin():
     try:
@@ -874,6 +1066,131 @@ def analyze_health():
     except Exception as e:
         print(f"Health Analysis Error: {e}")
         return jsonify({'error': str(e)}), 500
+
+# Government Dashboard Endpoints
+@app.route('/gov/stats', methods=['GET'])
+def get_gov_stats():
+    # Aggregate data for dashboard
+    listings = load_listings()
+    community = load_community_data()
+    crop_loss_cases = load_crop_loss_data()
+    
+    # Calculate stats
+    total_farmers = 1250 # Mock base
+    active_farmers = 850 + len(community.get('posts', []))
+    
+    # Market stats
+    total_listings = len(listings)
+    total_volume = sum([float(l.get('quantity', 0)) for l in listings])
+    
+    # Community stats
+    total_issues = len(community.get('posts', []))
+    resolved_issues = len([p for p in community.get('posts', []) if len(p.get('comments', [])) > 0])
+    
+    # Pending cases
+    pending_cases = len([c for c in crop_loss_cases if c.get('status') == 'Pending'])
+    
+    return jsonify({
+        'overview': {
+            'totalFarmers': total_farmers,
+            'activeFarmers': active_farmers,
+            'diseaseDetections': 342, # Mock
+            'pestAlerts': 128, # Mock
+            'fieldsMapped': 560
+        },
+        'market': {
+            'totalListings': total_listings,
+            'totalVolume': total_volume,
+            'listings': listings[:5] # Top 5 recent
+        },
+        'community': {
+            'totalIssues': total_issues,
+            'resolvedIssues': resolved_issues,
+            'recenttopics': [{
+                'id': p.get('id'),
+                'title': p.get('title'),
+                'content': p.get('content'),
+                'author': p.get('author'),
+                'timestamp': p.get('timestamp'),
+                'likes': p.get('likes', 0),
+                'replies': len(p.get('comments', []))
+            } for p in community.get('posts', [])[:5]]
+        },
+        'cropLoss': {
+            'pendingCases': pending_cases,
+            'totalDisbursed': 4500000 # Mock ₹
+        }
+    })
+
+@app.route('/gov/crop-loss', methods=['GET', 'POST'])
+def handle_crop_loss():
+    cases = load_crop_loss_data()
+    
+    if request.method == 'GET':
+        return jsonify(cases)
+        
+    if request.method == 'POST':
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        # Calculate variables first
+        damage_percentage = float(data.get('damagePercentage', 0))
+        cause = data.get('cause', 'Unknown')
+        estimated_loss = float(data.get('estimatedLoss', 0))
+        
+        # Rule-based Logic
+        is_eligible = damage_percentage > 33 and cause in ['Drought', 'Flood', 'Pest', 'Disease', 'Locust']
+        suggested_scheme = 'Pradhan Mantri Fasal Bima Yojana (PMFBY)' if is_eligible else 'None'
+        
+        # simple calc: if eligible, 70% of estimated loss, else 0
+        suggested_compensation = (estimated_loss * 0.70) if is_eligible else 0
+
+        new_case = {
+            'id': f"case_{str(uuid.uuid4())[:8]}",
+            'farmerName': data.get('farmerName', 'Unknown Farmer'),
+            'crop': data.get('crop', 'Unknown Crop'),
+            'damagePercentage': damage_percentage,
+            'cause': cause,
+            'status': 'Pending', # Pending, Approved, Rejected, Verified, Under Verification
+            'timestamp': datetime.now().isoformat(),
+            'location': data.get('location', 'Unknown'),
+            'estimatedLoss': estimated_loss,
+            'suggestedCompensation': suggested_compensation,
+            'isEligible': is_eligible,
+            'suggestedScheme': suggested_scheme
+        }
+        
+        cases.insert(0, new_case)
+        save_crop_loss_data(cases)
+        return jsonify(new_case), 201
+
+@app.route('/gov/crop-loss/<case_id>/action', methods=['POST'])
+def handle_crop_loss_action(case_id):
+    cases = load_crop_loss_data()
+    action_data = request.json
+    action = action_data.get('action') # 'approve', 'reject', 'verify'
+    
+    case_index = next((index for (index, d) in enumerate(cases) if d["id"] == case_id), None)
+    
+    if case_index is None:
+        return jsonify({'error': 'Case not found'}), 404
+        
+    case_to_update = cases[case_index]
+    
+    if action == 'approve':
+        case_to_update['status'] = 'Approved'
+    elif action == 'reject':
+        case_to_update['status'] = 'Rejected'
+    elif action == 'verify':
+        case_to_update['status'] = 'Under Verification'
+        case_to_update['verificationRequestedAt'] = datetime.now().isoformat()
+    # No else for invalid action to keep it simple or add check if needed, but existing code had basic check
+        
+    cases[case_index] = case_to_update
+    save_crop_loss_data(cases)
+    
+    return jsonify(case_to_update), 200
 
 if __name__ == '__main__':
     print("\n" + "="*50)

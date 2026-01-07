@@ -15,13 +15,15 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  role: 'farmer' | 'government';
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, role?: 'farmer' | 'government') => Promise<void>;
+  setUser: (user: User) => void;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   initializeAuth: () => void;
@@ -32,8 +34,10 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+
       loading: true,
-      login: async (email: string, password: string) => {
+      setUser: (user: User) => set({ user, isAuthenticated: true, loading: false }),
+      login: async (email: string, password: string, role: 'farmer' | 'government' = 'farmer') => {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           const firebaseUser = userCredential.user;
@@ -42,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
             email: firebaseUser.email || '',
             avatar: firebaseUser.photoURL || undefined,
+            role: role
           };
           set({ user, isAuthenticated: true, loading: false });
         } catch (error) {
@@ -62,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
             name: name,
             email: firebaseUser.email || '',
             avatar: firebaseUser.photoURL || undefined,
+            role: 'farmer' // Default to farmer for new signups
           };
           set({ user, isAuthenticated: true, loading: false });
         } catch (error) {
@@ -81,11 +87,16 @@ export const useAuthStore = create<AuthState>()(
       initializeAuth: () => {
         onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
           if (firebaseUser) {
+            // Check if we have a persisted role in local state, otherwise default
+            const persistedState = get();
+            const currentRole = persistedState.user?.role || 'farmer';
+
             const user: User = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
               email: firebaseUser.email || '',
               avatar: firebaseUser.photoURL || undefined,
+              role: currentRole
             };
             set({ user, isAuthenticated: true, loading: false });
           } else {

@@ -235,6 +235,29 @@ const EnhancedImageAnalysis: React.FC<EnhancedImageAnalysisProps> = ({
                     variant="outline"
                     className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
                     onClick={() => {
+                      const savedData = {
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        results: results,
+                        imageName: selectedFile?.name || 'Unknown'
+                      };
+
+                      // Get existing saves
+                      const existing = JSON.parse(localStorage.getItem('offlineDiseaseReports') || '[]');
+                      localStorage.setItem('offlineDiseaseReports', JSON.stringify([savedData, ...existing]));
+                      toast.success("Result saved for offline access!");
+                    }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-save"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-8H7v8" /><path d="M7 3v5h8" /></svg>
+                      Save
+                    </div>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                    onClick={() => {
                       if (speechState === 'speaking') {
                         pauseSpeech();
                         return;

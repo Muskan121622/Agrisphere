@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { chatWithAI, translateToHindi } from '@/lib/openai';
 import { mockChatWithAI } from '@/lib/mockAI';
+import { toast } from 'sonner';
 
 const VoiceRecognition = () => {
   const [isListening, setIsListening] = useState(false);
@@ -24,6 +25,8 @@ const VoiceRecognition = () => {
     { code: 'mr-IN', name: 'Marathi', flag: '🇮🇳' },
     { code: 'gu-IN', name: 'Gujarati', flag: '🇮🇳' },
   ];
+
+  const [isSupported, setIsSupported] = useState(true);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -74,6 +77,8 @@ const VoiceRecognition = () => {
           speakResponse(aiResponse);
         } catch (error) {
           console.error('Voice processing error:', error);
+          /* Added toast for user feedback */
+          toast.error("Failed to process voice command. Please try again.");
           setResponse('Sorry, I encountered an error processing your request.');
           setHindiResponse('क्षमा करें, मुझे आपके अनुरोध को प्रोसेस करने में त्रुटि हुई।');
         } finally {
@@ -85,6 +90,13 @@ const VoiceRecognition = () => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         setIsProcessing(false);
+        if (event.error === 'not-allowed') {
+          toast.error("Microphone access denied. Please allow microphone permissions.");
+        } else if (event.error === 'no-speech') {
+          toast.info("No speech detected. Please try again.");
+        } else {
+          toast.error(`Voice error: ${event.error}`);
+        }
       };
 
       recognition.current.onend = () => {
@@ -93,11 +105,26 @@ const VoiceRecognition = () => {
 
       recognition.current.onstart = () => {
         console.log('Speech recognition started');
+        toast.success("Listening... Speak now!");
       };
+    } else {
+      setIsSupported(false);
+      toast.error("Voice recognition not supported in this browser.");
     }
+
+    // Cleanup
+    return () => {
+      if (recognition.current) {
+        recognition.current.stop();
+      }
+    };
   }, [selectedLanguage]);
 
   const startListening = () => {
+    if (!isSupported) {
+      toast.error("Voice recognition is not supported in this browser. Try Chrome.");
+      return;
+    }
     if (recognition.current && !isListening) {
       setTranscript('');
       setResponse('');
@@ -108,6 +135,7 @@ const VoiceRecognition = () => {
         recognition.current.start();
       } catch (error) {
         console.error('Speech recognition start error:', error);
+        toast.error("Could not start microphone.");
         setIsListening(false);
       }
     }

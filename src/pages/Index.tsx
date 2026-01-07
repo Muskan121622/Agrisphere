@@ -118,7 +118,7 @@ const Index = () => {
               { name: "Advisory Hub", path: "/advisory-hub", public: false },
               { name: "Disease Detection", path: "/disease-detection", public: false },
               { name: "Digital Twin", path: "/digital-twin", public: false },
-              { name: "Yield Prediction", path: "/yield-prediction", public: false },
+              { name: "Community Forum", path: "/community", public: false },
               { name: "Marketplace", path: "/marketplace", public: false },
               { name: "Voice Assistant", path: "/voice-assistant", public: false },
               { name: "Fertilizer AI", path: "/fertilizer-recommendation", public: false },

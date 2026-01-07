@@ -21,6 +21,16 @@ const DiseaseDetection = () => {
     initializeDetector();
   }, [detector]);
 
+  const [showSaved, setShowSaved] = useState(false);
+  const [savedReports, setSavedReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showSaved) {
+      const loaded = JSON.parse(localStorage.getItem('offlineDiseaseReports') || '[]');
+      setSavedReports(loaded);
+    }
+  }, [showSaved]);
+
   const handleStartDetection = () => {
     analysisRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -110,7 +120,55 @@ const DiseaseDetection = () => {
                 <Upload className="mr-2 w-5 h-5" />
                 Upload Images
               </Button>
+              <Button size="lg" variant="secondary" className="border-primary/20" onClick={() => setShowSaved(!showSaved)}>
+                <span className="mr-2">💾</span>
+                {showSaved ? "Hide Saved" : "Saved Reports"}
+              </Button>
             </div>
+
+            {showSaved && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-8 text-left max-w-4xl mx-auto bg-card border border-border rounded-xl p-6 shadow-xl"
+              >
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <span>📂</span> Offline Disease Reports
+                </h3>
+                {savedReports.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No saved reports found.</p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {savedReports.map((report: any) => (
+                      <Card key={report.id} className="p-4 border-l-4 border-l-primary cursor-pointer hover:bg-accent/50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-lg">{new Date(report.timestamp).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(report.timestamp).toLocaleTimeString()}</p>
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-bold ${report.results.overallHealth.status === 'excellent' ? 'bg-green-100 text-green-700' :
+                            report.results.overallHealth.status === 'good' ? 'bg-blue-100 text-blue-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                            {report.results.overallHealth.status.toUpperCase()}
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm">
+                          <p><strong>Score:</strong> {report.results.overallHealth.score}/100</p>
+                          <p><strong>Issues:</strong> {report.results.diseases.length} Diseases, {report.results.pests.length} Pests</p>
+                        </div>
+                        <Button variant="link" className="px-0 mt-2 text-primary" onClick={() => {
+                          // Simple alert for now, effectively we could load this into the main view
+                          alert(JSON.stringify(report.results.overallHealth.recommendations, null, 2));
+                        }}>
+                          View Quick Summary
+                        </Button>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </section>

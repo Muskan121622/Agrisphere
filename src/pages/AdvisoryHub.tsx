@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,9 @@ import { FarmerProfile, Scheme, NewsArticle, Video } from "@/types/advisory";
 import { SchemeCard } from "@/components/Advisory/SchemeCard";
 import { NewsCard } from "@/components/Advisory/NewsCard";
 import { VideoCard } from "@/components/Advisory/VideoCard";
+const OfflineFertilizerCalculator = lazy(() => import("@/components/OfflineFertilizerCalculator"));
+
+// ... components
 
 const AdvisoryHub = () => {
     // State
@@ -26,6 +29,8 @@ const AdvisoryHub = () => {
     // State
     const [activeTab, setActiveTab] = useState("schemes");
     const [schemes, setSchemes] = useState<Scheme[]>([]);
+    const [aiSchemes, setAiSchemes] = useState<Scheme[]>([]); // New state for AI-fetched schemes
+    const [loadingAiSchemes, setLoadingAiSchemes] = useState(false);
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [videos, setVideos] = useState<Video[]>([]);
     const [loadingNews, setLoadingNews] = useState(false);
@@ -41,9 +46,37 @@ const AdvisoryHub = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isListening, setIsListening] = useState(false);
 
-    // ... (rest of simple states)
+    // Farmer Profile State
+    const [profile, setProfile] = useState<FarmerProfile>({
+        state: "Bihar",
+        landSize: 2.5,
+        farmerType: "Small",
+        name: "Kisan Bhai"
+    });
 
-    // ... (rest of effects)
+    // Effects for Caching & Data
+    useEffect(() => {
+        const fetchSchemes = async () => {
+            if (!navigator.onLine) {
+                // Offline Mode: Load from Cache
+                const cached = localStorage.getItem('cachedSchemes');
+                if (cached) {
+                    setSchemes(JSON.parse(cached));
+                    toast.info("Offline: Loaded schemes from cache.");
+                }
+                return;
+            }
+
+            // Online Mode
+            const eligible = getEligibleSchemes(profile, ALL_SCHEMES);
+            setSchemes(eligible);
+
+            // Save to Cache
+            localStorage.setItem('cachedSchemes', JSON.stringify(eligible));
+        };
+
+        fetchSchemes();
+    }, [profile]); // Refresh when profile changes
 
     const handleLoadMoreSchemes = async () => {
         // If we have hidden schemes already loaded, just show them
@@ -91,19 +124,7 @@ const AdvisoryHub = () => {
 
     // Language State removed (mapped from i18n above)
 
-    // Farmer Profile State
-    const [profile, setProfile] = useState<FarmerProfile>({
-        state: "Bihar",
-        landSize: 2.5,
-        farmerType: "Small",
-        name: "Kisan Bhai"
-    });
 
-    // AI Schemes State
-    const [aiSchemes, setAiSchemes] = useState<Scheme[]>([]);
-    const [loadingAiSchemes, setLoadingAiSchemes] = useState(false);
-
-    // Fetch Data Effects - Initial & AI
     useEffect(() => {
         const eligible = getEligibleSchemes(profile, ALL_SCHEMES);
         setSchemes([...eligible, ...aiSchemes]);
@@ -303,16 +324,11 @@ const AdvisoryHub = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                    <TabsList className="grid w-full grid-cols-3 lg:w-[400px] bg-green-50">
-                        <TabsTrigger value="schemes" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
-                            🏛️ Schemes
-                        </TabsTrigger>
-                        <TabsTrigger value="news" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                            📰 News
-                        </TabsTrigger>
-                        <TabsTrigger value="videos" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
-                            🎥 Videos
-                        </TabsTrigger>
+                    <TabsList className="bg-slate-900 border border-slate-800 p-1 mb-6">
+                        <TabsTrigger value="schemes" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Schemes & Subsidies</TabsTrigger>
+                        <TabsTrigger value="calculator" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Fertilizer Calculator <span className="ml-2 text-[10px] bg-green-900 text-green-400 px-1 rounded">OFFLINE</span></TabsTrigger>
+                        <TabsTrigger value="news" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Farming News</TabsTrigger>
+                        <TabsTrigger value="videos" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Video Tutorials</TabsTrigger>
                     </TabsList>
 
                     <div className="flex items-center gap-2">
@@ -513,8 +529,15 @@ const AdvisoryHub = () => {
                     )}
                 </TabsContent>
 
+                <TabsContent value="calculator" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="max-w-2xl mx-auto py-8">
+                        <Suspense fallback={<div className="h-64 flex items-center justify-center text-slate-500">Loading Calculator...</div>}>
+                            <OfflineFertilizerCalculator />
+                        </Suspense>
+                    </div>
+                </TabsContent>
             </Tabs>
-        </div >
+        </div>
     );
 };
 

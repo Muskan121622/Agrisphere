@@ -45,7 +45,7 @@ export const translateToHindi = (text: string): string => {
         "hectares": "hectare",
         "mapped into": "jise baanta gaya hai",
         "soil zones": "mitti ke hisson mein",
-        "There are": "Wahan hain",
+
         "active irrigation zones": "sinchai ke kshetra",
         "Average crop health is": "Fasal ka ausatan swasthya hai",
         "High pest risk detected for": "Iske liye kide ka khatra zyada hai",
