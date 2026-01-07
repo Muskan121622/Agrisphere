@@ -85,23 +85,32 @@ export class EnhancedDiseaseDetector {
 
     try {
       console.log('Starting disease detection for:', imageFile.name);
-      
+
       // Create FormData to send the image file
       const formData = new FormData();
       formData.append('image', imageFile);
 
       console.log('Sending request to API...');
-      
+
       // Make API call to the backend
       const response = await fetch('http://localhost:5000/detect-disease', {
         method: 'POST',
         body: formData,
       });
-      
+
       console.log('API response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        let errorMessage = `API request failed: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          console.error("Could not parse error response", e);
+        }
+        throw new Error(errorMessage);
       }
 
       const apiResult = await response.json();
@@ -109,8 +118,8 @@ export class EnhancedDiseaseDetector {
 
       // Use the affected part from the API result, fallback to leaf if not provided
       // For healthy plants, we still want to show a plant part for context
-      const plantPart = apiResult.affectedPart && apiResult.affectedPart !== 'none' && apiResult.affectedPart !== 'unknown' 
-        ? apiResult.affectedPart 
+      const plantPart = apiResult.affectedPart && apiResult.affectedPart !== 'none' && apiResult.affectedPart !== 'unknown'
+        ? apiResult.affectedPart
         : (apiResult.disease === 'healthy' ? 'leaf' : this.detectPlantPart(imageFile.name));
 
       // Generate additional results based on the API result
@@ -122,8 +131,31 @@ export class EnhancedDiseaseDetector {
 
       const processingTime = Date.now() - startTime;
 
-      // Calculate overall health score
-      const overallHealth = this.calculateOverallHealth(diseases, pests, nutrientDeficiency, soilAnalysis);
+
+
+      // Calculate overall health score using Groq API
+      let overallHealth;
+      try {
+        const healthResponse = await fetch('http://localhost:5000/analyze-health', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            diseases: diseases.map(d => ({ disease: d.disease, severity: d.severity })),
+            pests: pests.map(p => ({ pest: p.pest, severity: p.severity })),
+            nutrients: nutrientDeficiency.map(n => ({ nutrient: n.nutrient, severity: n.severity })),
+            soil: { texture: soilAnalysis.texture, fertility: soilAnalysis.fertility }
+          })
+        });
+
+        if (healthResponse.ok) {
+          overallHealth = await healthResponse.json();
+        } else {
+          throw new Error("Health API failed");
+        }
+      } catch (err) {
+        console.warn("Using fallback health calculation:", err);
+        overallHealth = this.calculateOverallHealthFallback(diseases, pests, nutrientDeficiency, soilAnalysis);
+      }
 
       return {
         diseases,
@@ -139,6 +171,12 @@ export class EnhancedDiseaseDetector {
       };
     } catch (error) {
       console.error('Error detecting disease:', error);
+
+      // CRITICAL FIX: Do not use mock fallback if the error is a Plant Verification failure.
+      if (error instanceof Error && (error.message.includes("not a plant") || error.message.includes("Cannot detect"))) {
+        throw error;
+      }
+
       // Fallback to mock results if API fails
       const plantPart = this.detectPlantPart(imageFile.name);
       const diseases = this.generateDiseaseResults(plantPart);
@@ -146,7 +184,7 @@ export class EnhancedDiseaseDetector {
       const nutrientDeficiency = this.generateNutrientResults(plantPart);
       const soilAnalysis = this.generateSoilAnalysis();
       const processingTime = Date.now() - startTime;
-      const overallHealth = this.calculateOverallHealth(diseases, pests, nutrientDeficiency, soilAnalysis);
+      const overallHealth = this.calculateOverallHealthFallback(diseases, pests, nutrientDeficiency, soilAnalysis);
 
       return {
         diseases,
@@ -169,7 +207,7 @@ export class EnhancedDiseaseDetector {
     if (name.includes('stem')) return 'stem';
     if (name.includes('fruit')) return 'fruit';
     if (name.includes('soil')) return 'soil';
-    
+
     // Default to leaf for plant disease detection as most samples are leaf-based
     return 'leaf';
   }
@@ -282,7 +320,7 @@ export class EnhancedDiseaseDetector {
 
     const relevantDiseases = diseaseDatabase[plantPart as keyof typeof diseaseDatabase] || diseaseDatabase.leaf;
     const numDiseases = Math.floor(Math.random() * 2) + 1;
-    
+
     return relevantDiseases.slice(0, numDiseases).map(disease => ({
       disease: disease.disease,
       confidence: 0.75 + Math.random() * 0.2,
@@ -334,7 +372,7 @@ export class EnhancedDiseaseDetector {
         damage: pestInfo.damage
       }];
     }
-    
+
     return [];
   }
 
@@ -376,14 +414,14 @@ export class EnhancedDiseaseDetector {
         affectedGrowth: nutrientInfo.affectedGrowth
       }];
     }
-    
+
     return [];
   }
 
   private generateSoilAnalysis(): SoilAnalysisResult {
     const textures: ('clay' | 'sandy' | 'loamy' | 'silt')[] = ['clay', 'sandy', 'loamy', 'silt'];
     const texture = textures[Math.floor(Math.random() * textures.length)];
-    
+
     const soilProperties = {
       clay: { ph: 6.8, moisture: 65, organicMatter: 3.2, drainage: 'poor', fertility: 'high' },
       sandy: { ph: 6.2, moisture: 25, organicMatter: 1.8, drainage: 'excellent', fertility: 'low' },
@@ -392,7 +430,7 @@ export class EnhancedDiseaseDetector {
     };
 
     const props = soilProperties[texture];
-    
+
     return {
       texture,
       confidence: 0.80 + Math.random() * 0.15,
@@ -432,24 +470,24 @@ export class EnhancedDiseaseDetector {
     return recommendations[texture as keyof typeof recommendations] || [];
   }
 
-  private calculateOverallHealth(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult): { 
-    score: number; 
-    status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent'; 
-    recommendations: string[] 
+  private calculateOverallHealthFallback(diseases: DetectionResult[], pests: PestDetectionResult[], nutrients: NutrientDeficiencyResult[], soil: SoilAnalysisResult): {
+    score: number;
+    status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+    recommendations: string[]
   } {
     let score = 100;
     const recommendations: string[] = [];
 
     // Check if the plant is healthy with high confidence
     const isHealthy = diseases.length === 1 && diseases[0].disease === 'healthy' && diseases[0].confidence > 0.9;
-    
+
     if (isHealthy) {
       // For healthy plants with high confidence, give a high score regardless of other factors
       score = Math.min(100, 95 + Math.floor(diseases[0].confidence * 5));
       recommendations.push('Plant is healthy - continue current practices');
     } else {
       // For diseased plants or low confidence healthy classification, calculate normally
-      
+
       diseases.forEach(disease => {
         // Don't deduct points for healthy plants
         if (disease.disease !== 'healthy') {
@@ -486,9 +524,9 @@ export class EnhancedDiseaseDetector {
     }
 
     let status: 'critical' | 'poor' | 'fair' | 'good' | 'excellent' = score >= 95 ? 'excellent' :
-                  score >= 85 ? 'good' :
-                  score >= 70 ? 'fair' :
-                  score >= 50 ? 'poor' : 'critical';
+      score >= 85 ? 'good' :
+        score >= 70 ? 'fair' :
+          score >= 50 ? 'poor' : 'critical';
 
     // Special case for high confidence healthy plants
     if (isHealthy) {
@@ -498,7 +536,7 @@ export class EnhancedDiseaseDetector {
       // Check if all recommendations are positive (for healthy plants)
       const hasNegativeRecommendations = recommendations.some(rec => rec.startsWith('Address') || rec.startsWith('Implement') || rec.startsWith('Correct'));
       const hasMonitoringRecommendations = recommendations.some(rec => rec.startsWith('Monitor for'));
-      
+
       if (!hasNegativeRecommendations && !hasMonitoringRecommendations) {
         // All recommendations are positive, so plant is healthy
         recommendations.splice(0, recommendations.length, 'Plant health is excellent - maintain current practices');
