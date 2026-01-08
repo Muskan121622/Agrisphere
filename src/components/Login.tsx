@@ -255,11 +255,7 @@ const Login = () => {
                   <p className="text-muted-foreground text-sm">
                     Don't have an account?{' '}
                     <span
-                      onClick={() => {
-                        if (role === 'farmer') {
-                          // Handle register navigation or modal
-                        }
-                      }}
+                      onClick={() => navigate('/signup')}
                       className="text-primary font-medium hover:underline cursor-pointer"
                     >
                       Create one here
