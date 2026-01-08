@@ -25,6 +25,8 @@ const FertilizerRecommendation = lazy(() => import("./pages/FertilizerRecommenda
 
 const PestPrediction = lazy(() => import("./pages/PestPrediction"));
 const AdvisoryHub = lazy(() => import("./pages/AdvisoryHub"));
+const BuyerDashboard = lazy(() => import("./pages/BuyerDashboard"));
+const CropLossForm = lazy(() => import("./pages/CropLossForm"));
 
 const queryClient = new QueryClient();
 
@@ -90,6 +92,8 @@ const App = () => {
               <Route path="/fertilizer-recommendation" element={<ProtectedRoute><FertilizerRecommendation /></ProtectedRoute>} />
               <Route path="/pest-prediction" element={<ProtectedRoute><PestPrediction /></ProtectedRoute>} />
               <Route path="/gov/dashboard" element={<ProtectedRoute><GovDashboard /></ProtectedRoute>} />
+              <Route path="/buyer/dashboard" element={<ProtectedRoute><BuyerDashboard /></ProtectedRoute>} />
+              <Route path="/compensation-form" element={<ProtectedRoute><CropLossForm /></ProtectedRoute>} />
               <Route path="/comprehensive-dashboard" element={<ProtectedRoute><ComprehensiveDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -55,6 +55,10 @@ const Community = () => {
 
     // Chat Inputs
     const [chatInput, setChatInput] = useState("");
+    const [username, setUsername] = useState(() => {
+        return localStorage.getItem("agrisphere_username") || `Farmer_${Math.floor(Math.random() * 1000)}`;
+    });
+    const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
     const API_URL = 'http://localhost:5000';
 
@@ -67,10 +71,35 @@ const Community = () => {
     useEffect(() => {
         if (activeTab === 'chat') {
             fetchChat();
-            const interval = setInterval(fetchChat, 3000); // Faster polling for chat
-            return () => clearInterval(interval);
+            fetchOnlineUsers();
+            const interval = setInterval(() => {
+                fetchChat();
+                fetchOnlineUsers();
+            }, 3000); // Faster polling for chat
+
+            // Heartbeat
+            const heartbeat = setInterval(() => {
+                axios.post(`${API_URL}/community/heartbeat`, { username });
+            }, 10000);
+
+            // Initial heartbeat
+            axios.post(`${API_URL}/community/heartbeat`, { username });
+
+            return () => {
+                clearInterval(interval);
+                clearInterval(heartbeat);
+            };
         }
-    }, [activeTab]);
+    }, [activeTab, username]);
+
+    const fetchOnlineUsers = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/community/online`);
+            setOnlineUsers(res.data);
+        } catch (e) {
+            console.error("Error fetching online users", e);
+        }
+    };
 
     const fetchPosts = async () => {
         try {
@@ -144,7 +173,7 @@ const Community = () => {
 
         try {
             const msg = {
-                sender: "Me", // Replace with auth user
+                sender: username, // Use dynamic username
                 text: chatInput
             };
 
@@ -360,17 +389,17 @@ const Community = () => {
                                         <div className="text-center text-slate-500 mt-20">Start the conversation!</div>
                                     ) : (
                                         chatMessages.map((msg, i) => (
-                                            <div key={i} className={`flex gap-3 ${msg.sender === 'Me' ? 'flex-row-reverse' : ''}`}>
+                                            <div key={i} className={`flex gap-3 ${msg.sender === username ? 'flex-row-reverse' : ''}`}>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarFallback className="bg-slate-800 text-slate-300">{msg.sender[0]}</AvatarFallback>
                                                 </Avatar>
-                                                <div className={`rounded-lg p-3 max-w-[80%] group relative ${msg.sender === 'Me' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                                                <div className={`rounded-lg p-3 max-w-[80%] group relative ${msg.sender === username ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
                                                     <div className="text-xs opacity-70 mb-1 flex justify-between gap-4">
                                                         <span>{msg.sender}</span>
                                                         <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                     <p className="text-sm">{msg.text}</p>
-                                                    {msg.sender !== 'Me' && (
+                                                    {msg.sender !== username && (
                                                         <button
                                                             onClick={() => handleTranslate(msg.id, msg.text)}
                                                             className="absolute -right-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-slate-800 border border-slate-700 rounded-full text-slate-400 hover:text-white"
@@ -408,15 +437,15 @@ const Community = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {["Ramesh Kumar", "Suresh Patel", "Anita Devi", "Rajesh Singh"].map((name, i) => (
-                                        <div key={i} className="flex items-center gap-3">
+                                    {onlineUsers.map((name, i) => (
+                                        <div key={i} className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2">
                                             <div className="relative">
                                                 <Avatar className="h-8 w-8 border border-slate-700">
                                                     <AvatarFallback>{name[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-900 rounded-full"></div>
                                             </div>
-                                            <span className="text-sm text-slate-300">{name}</span>
+                                            <span className="text-sm text-slate-300">{name} {name === username && '(You)'}</span>
                                         </div>
                                     ))}
                                 </div>

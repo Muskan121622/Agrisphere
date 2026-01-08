@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
 const Navbar = () => {
-    const { isAuthenticated, logout } = useAuthStore();
+    const { isAuthenticated, logout, user } = useAuthStore();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -39,30 +39,30 @@ const Navbar = () => {
 
                 <nav className="hidden md:flex items-center gap-6">
                     {(() => {
-                        const { user } = useAuthStore();
-                        const isGov = user?.role === 'government';
+                        const userRole = user?.role;
+                        const isGov = userRole === 'government';
+                        const isBuyer = userRole === 'buyer';
 
                         return [
-                            { name: "Home", path: "/", public: true },
-                            { name: "Marketplace", path: "/marketplace", public: false, gov: false },
-                            { name: "Community Forum", path: "/community", public: false, gov: false },
-                            { name: "Advisory Hub", path: "/advisory-hub", public: false, gov: false },
-                            { name: "Disease Detection", path: "/disease-detection", public: false, gov: false },
-                            { name: "Digital Twin", path: "/digital-twin", public: false, gov: false },
-                            { name: "Voice Assistant", path: "/voice-assistant", public: false, gov: false },
-                            { name: "Sensors", path: "/iot-monitoring", public: false, gov: false },
-                            { name: "Admin Dashboard", path: "/gov/dashboard", public: false, gov: true }, // Only for gov
+                            { name: "Home", path: "/", public: true, buyer: true },
+                            { name: "Buyer Dashboard", path: "/buyer/dashboard", public: false, gov: false, buyer: true },
+                            { name: "Marketplace", path: "/marketplace", public: false, gov: false, buyer: false },
+                            { name: "Community Forum", path: "/community", public: false, gov: false, buyer: false },
+                            { name: "Advisory Hub", path: "/advisory-hub", public: false, gov: false, buyer: false },
+                            { name: "Disease Detection", path: "/disease-detection", public: false, gov: false, buyer: false },
+                            { name: "Digital Twin", path: "/digital-twin", public: false, gov: false, buyer: false },
+                            { name: "Voice Assistant", path: "/voice-assistant", public: false, gov: false, buyer: false },
+                            { name: "Sensors", path: "/iot-monitoring", public: false, gov: false, buyer: false },
+                            { name: "Admin Dashboard", path: "/gov/dashboard", public: false, gov: true, buyer: false },
                         ].filter(item => {
                             if (item.public) return !isAuthenticated;
                             if (!isAuthenticated) return false;
 
-                            // If user is gov, only show Home and Admin Dashboard (and maybe monitoring)
-                            // Or, let them see everything, BUT ensure Admin Dashboard is ONLY seen by gov
-                            if (item.gov === true) return isGov;
-                            if (item.gov === false) return !isGov; // Hide standard features from gov? Or user wants specific flow?
-                            // User request: "admin login should not appear after login user" (farmer)
+                            if (isGov) return item.gov === true || (item.public && item.name === 'Home');
+                            if (isBuyer) return item.buyer === true || (item.public && item.name === 'Home');
 
-                            return true;
+                            // Default (Farmer)
+                            return item.gov === false && item.buyer !== true;
                         }).map((item, i) => (
                             <motion.a
                                 key={item.name}

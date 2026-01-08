@@ -1,5 +1,26 @@
 [
     {
+        "id": "case_b7f93bee",
+        "farmerName": "muskan",
+        "crop": "Rice",
+        "season": "Kharif",
+        "damagePercentage": 50.0,
+        "cause": "Drought",
+        "status": "Under Verification",
+        "timestamp": "2026-01-09T03:00:06.913388",
+        "location": "takyel, imphal, Manipur",
+        "estimatedLoss": 134750,
+        "suggestedCompensation": 94325,
+        "isEligible": true,
+        "suggestedScheme": "State Disaster Relief Fund (SDRF)",
+        "advisoryCompliance": {
+            "fertilizer": true,
+            "irrigation": true,
+            "pestControl": true
+        },
+        "evidence": null
+    },
+    {
         "id": "case_c242b896",
         "farmerName": "Farmer A",
         "crop": "Cotton",
@@ -42,11 +63,12 @@
         "crop": "Potato",
         "damagePercentage": 79,
         "cause": "Flooding",
-        "status": "Pending",
+        "status": "Under Verification",
         "timestamp": "2026-01-07T23:58:26.845633",
         "location": "Madhya Pradesh",
         "estimatedLoss": 67287,
-        "suggestedCompensation": 47100
+        "suggestedCompensation": 47100,
+        "verificationRequestedAt": "2026-01-08T05:06:41.399342"
     },
     {
         "id": "case_775315fe",
@@ -54,7 +76,7 @@
         "crop": "Cotton",
         "damagePercentage": 58,
         "cause": "Unexpected Hailstorm",
-        "status": "Pending",
+        "status": "Rejected",
         "timestamp": "2026-01-07T23:58:26.845633",
         "location": "Punjab",
         "estimatedLoss": 192250,

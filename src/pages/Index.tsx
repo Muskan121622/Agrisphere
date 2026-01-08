@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Brain, MapPin, TrendingUp, Users, Shield, ArrowRight, Cloud, Zap, Activity, ShoppingBag, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import AIChat from "@/components/AIChat";
 import { useAuthStore } from "@/store/authStore";
@@ -231,9 +232,24 @@ const Index = () => {
                 Start Free Trial
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="border-2 hover:shadow-glow-accent transition-all duration-300 h-14 px-8 text-lg rounded-xl glass">
-                Watch Demo
-              </Button>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="lg" variant="outline" className="border-2 hover:shadow-glow-accent transition-all duration-300 h-14 px-8 text-lg rounded-xl glass">
+                    Watch Demo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-slate-800">
+                  <div className="relative w-full pb-[56.25%] h-0">
+                    <iframe
+                      src="https://drive.google.com/file/d/1VdNsdIxKx5EU5CS9kqfx7FldNteBv1NV/preview"
+                      className="absolute top-0 left-0 w-full h-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </motion.div>
 
             {/* Stats */}

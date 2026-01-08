@@ -21,6 +21,20 @@ MARKET_DATA_FILE = "market_data.json"
 LISTINGS_FILE = "listings.json"
 COMMUNITY_DATA_FILE = "community_data.json"
 CROP_LOSS_FILE = "crop_loss_data.json"
+DEMANDS_FILE = "demands.json"
+
+def load_demands():
+    if os.path.exists(DEMANDS_FILE):
+        try:
+            with open(DEMANDS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_demands(data):
+    with open(DEMANDS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
 
 def load_crop_loss_data():
     if os.path.exists(CROP_LOSS_FILE):
@@ -47,6 +61,34 @@ def load_community_data():
 def save_community_data(data):
     with open(COMMUNITY_DATA_FILE, 'w') as f:
         json.dump(data, f, indent=4)
+
+# Online User Tracking (In-Memory)
+active_users = {} # { "User Name": "2024-01-01T12:00:00" }
+
+def update_user_status(username):
+    active_users[username] = datetime.now().isoformat()
+
+def get_active_users():
+    # Return users active in last 5 minutes
+    current_time = datetime.now()
+    active = []
+    to_remove = []
+    
+    for user, last_seen_str in active_users.items():
+        try:
+            last_seen = datetime.fromisoformat(last_seen_str)
+            if (current_time - last_seen).total_seconds() < 300: # 5 minutes
+                active.append(user)
+            else:
+                to_remove.append(user)
+        except:
+            to_remove.append(user)
+            
+    # Cleanup old users
+    for user in to_remove:
+        del active_users[user]
+        
+    return active
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -512,12 +554,13 @@ def handle_voice_query():
     try:
         data = request.json
         query_text = data.get('text', '')
+        language_code = data.get('language', 'en-IN')
         
         if not query_text:
             return jsonify({'error': 'No query text provided'}), 400
         
         # Process query with voice assistant
-        response = voice_assistant.process_voice_input(query_text)
+        response = voice_assistant.process_voice_input(query_text, language_code)
         
         return jsonify({
             'success': True,
@@ -546,6 +589,28 @@ def get_voice_examples():
         ]
     }
     return jsonify(examples)
+
+@app.route('/demands', methods=['GET', 'POST'])
+def handle_demands():
+    print(f"Demands Endpoint Hit: {request.method}")
+    if request.method == 'GET':
+        return jsonify(load_demands())
+    
+    if request.method == 'POST':
+        try:
+            new_demand = request.json
+            print(f"Received new demand: {new_demand}")
+            new_demand['id'] = str(uuid.uuid4())
+            new_demand['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            demands = load_demands()
+            demands.append(new_demand)
+            save_demands(demands)
+            
+            return jsonify({"message": "Demand posted successfully", "demand": new_demand}), 201
+        except Exception as e:
+            print(f"Error saving demand: {e}")
+            return jsonify({"error": str(e)}), 500
 
 @app.route('/recommend-fertilizer', methods=['POST'])
 def recommend_fertilizer():
@@ -794,6 +859,8 @@ def handle_listings():
             'quantity': data['quantity'],
             'price': data['price'],
             'location': data['location'],
+            'harvestDate': data.get('harvestDate', 'Not specified'),
+            'quality': data.get('quality', 'Standard'),
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'verified': True # Mock verification
         }
@@ -803,6 +870,78 @@ def handle_listings():
         save_listings(listings)
         
         return jsonify(new_listing), 201
+
+# Online Status Endpoints
+@app.route('/community/heartbeat', methods=['POST'])
+def handle_heartbeat():
+    data = request.json
+    username = data.get('username')
+    if username:
+        update_user_status(username)
+        return jsonify({'status': 'updated'})
+    return jsonify({'error': 'Username required'}), 400
+
+@app.route('/community/online', methods=['GET'])
+def get_online_users():
+    users = get_active_users()
+    return jsonify(users)
+
+# Buyer Dashboard Models & Routes
+BUYER_INTERACTIONS_FILE = "buyer_interactions.json"
+
+def load_buyer_interactions():
+    if os.path.exists(BUYER_INTERACTIONS_FILE):
+        try:
+            with open(BUYER_INTERACTIONS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_buyer_interactions(data):
+    with open(BUYER_INTERACTIONS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+@app.route('/buyer/insights', methods=['POST'])
+def get_buyer_insights_api():
+    data = request.json
+    crop = data.get('crop')
+    state = data.get('state')
+    district = data.get('district', '')
+    
+    if not crop or not state:
+        return jsonify({'error': 'Crop and State are required'}), 400
+        
+    insights = market_engine.get_buyer_insights(crop, state, district)
+    return jsonify(insights)
+
+@app.route('/buyer/interactions', methods=['GET', 'POST'])
+def handle_buyer_interactions():
+    if request.method == 'GET':
+        # Filter by buyerId if provided query param
+        buyer_id = request.args.get('buyerId')
+        interactions = load_buyer_interactions()
+        if buyer_id:
+            interactions = [i for i in interactions if i.get('buyerId') == buyer_id]
+        return jsonify(interactions)
+        
+    if request.method == 'POST':
+        data = request.json
+        interactions = load_buyer_interactions()
+        
+        new_interaction = {
+            'id': str(uuid.uuid4()),
+            'buyerId': data.get('buyerId'),
+            'listingId': data.get('listingId'),
+            'farmerName': data.get('farmerName'),
+            'crop': data.get('crop'),
+            'status': 'Contacted',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        interactions.insert(0, new_interaction)
+        save_buyer_interactions(interactions)
+        return jsonify({'message': 'Interaction recorded', 'id': new_interaction['id']}), 201
 
 # Community Endpoints
 @app.route('/community/posts', methods=['GET', 'POST'])
@@ -1134,31 +1273,48 @@ def handle_crop_loss():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
             
-        # Calculate variables first
+        # Parse detailed fields
         damage_percentage = float(data.get('damagePercentage', 0))
-        cause = data.get('cause', 'Unknown')
-        estimated_loss = float(data.get('estimatedLoss', 0))
+        cause = data.get('causeOfLoss', 'Unknown')
+        affected_area = float(data.get('affectedArea', 0))
+        crop_name = data.get('cropName', 'Unknown Crop')
+        
+        # Calculate Estimated Loss (Mock Logic)
+        # Avg Yield (Qt/Acre) * Avg Price (Rs/Qt) * Impact Area * Damage %
+        # Mock Yields & Prices
+        yields = {'Wheat': 20, 'Rice': 25, 'Cotton': 10, 'Maize': 30, 'Potato': 100}
+        prices = {'Wheat': 2275, 'Rice': 2200, 'Cotton': 6000, 'Maize': 2090, 'Potato': 1000}
+        
+        avg_yield = yields.get(crop_name, 20)
+        avg_price = prices.get(crop_name, 2000)
+        
+        estimated_loss_calc = (avg_yield * affected_area) * avg_price * (damage_percentage / 100)
         
         # Rule-based Logic
-        is_eligible = damage_percentage > 33 and cause in ['Drought', 'Flood', 'Pest', 'Disease', 'Locust']
-        suggested_scheme = 'Pradhan Mantri Fasal Bima Yojana (PMFBY)' if is_eligible else 'None'
+        is_eligible = damage_percentage >= 33 and cause in ['Drought', 'Flood', 'Pest', 'Disease', 'Hailstorm', 'Heatwave']
         
-        # simple calc: if eligible, 70% of estimated loss, else 0
-        suggested_compensation = (estimated_loss * 0.70) if is_eligible else 0
+        suggested_scheme = 'None'
+        if is_eligible:
+            suggested_scheme = 'PMFBY' if data.get('insuranceStatus') == 'Yes' else 'State Disaster Relief Fund (SDRF)'
+        
+        suggested_compensation = (estimated_loss_calc * 0.70) if is_eligible else 0
 
         new_case = {
             'id': f"case_{str(uuid.uuid4())[:8]}",
             'farmerName': data.get('farmerName', 'Unknown Farmer'),
-            'crop': data.get('crop', 'Unknown Crop'),
+            'crop': crop_name,
+            'season': data.get('season', 'Kharif'),
             'damagePercentage': damage_percentage,
             'cause': cause,
-            'status': 'Pending', # Pending, Approved, Rejected, Verified, Under Verification
+            'status': 'Under Verification', # Default to Under Verification for digital claims
             'timestamp': datetime.now().isoformat(),
             'location': data.get('location', 'Unknown'),
-            'estimatedLoss': estimated_loss,
-            'suggestedCompensation': suggested_compensation,
+            'estimatedLoss': int(estimated_loss_calc),
+            'suggestedCompensation': int(suggested_compensation),
             'isEligible': is_eligible,
-            'suggestedScheme': suggested_scheme
+            'suggestedScheme': suggested_scheme,
+            'advisoryCompliance': data.get('advisoryCompliance', {}),
+            'evidence': data.get('evidence', 'No files uploaded')
         }
         
         cases.insert(0, new_case)

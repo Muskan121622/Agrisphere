@@ -21,8 +21,8 @@ const VoiceAssistant = () => {
       title: "Local Language Support",
       description: "Support for regional languages across India",
       icon: "🗣️",
-      languages: ["Hindi", "Punjabi", "Marathi", "Gujarati", "Tamil", "Telugu"],
-      coverage: "12 languages"
+      languages: ["Hindi", "English (India)"],
+      coverage: "2 languages"
     },
     {
       title: "Audio Responses",
@@ -64,13 +64,7 @@ const VoiceAssistant = () => {
 
   const supportedLanguages = [
     { name: "Hindi", speakers: "600M+", status: "Full Support", flag: "🇮🇳" },
-    { name: "Punjabi", speakers: "100M+", status: "Full Support", flag: "🇮🇳" },
-    { name: "Marathi", speakers: "83M+", status: "Full Support", flag: "🇮🇳" },
-    { name: "Gujarati", speakers: "56M+", status: "Full Support", flag: "🇮🇳" },
-    { name: "Tamil", speakers: "75M+", status: "Beta", flag: "🇮🇳" },
-    { name: "Telugu", speakers: "81M+", status: "Beta", flag: "🇮🇳" },
-    { name: "Bengali", speakers: "265M+", status: "Coming Soon", flag: "🇮🇳" },
-    { name: "Kannada", speakers: "44M+", status: "Coming Soon", flag: "🇮🇳" }
+    { name: "English (India)", speakers: "125M+", status: "Full Support", flag: "🇮🇳" }
   ];
 
   return (
@@ -103,19 +97,26 @@ const VoiceAssistant = () => {
               Voice Assistant for Farmers
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Speak naturally in Hindi or your local language. Get instant AI-powered 
+              Speak naturally in Hindi or your local language. Get instant AI-powered
               agricultural advice with voice responses designed for rural farmers.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className={`bg-gradient-primary transition-all duration-300 ${isListening ? 'animate-pulse' : ''}`}
-                onClick={() => setIsListening(!isListening)}
+                onClick={() => {
+                  document.getElementById('voice-demo')?.scrollIntoView({ behavior: 'smooth' });
+                  // Optional: Trigger a focus or highlight
+                }}
               >
                 <Mic className="mr-2 w-5 h-5" />
-                {isListening ? 'Listening...' : 'Start Speaking'}
+                Start Speaking
               </Button>
-              <Button size="lg" variant="outline">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => document.getElementById('voice-demo')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 <Languages className="mr-2 w-5 h-5" />
                 Choose Language
               </Button>
@@ -229,7 +230,7 @@ const VoiceAssistant = () => {
       </section>
 
       {/* Live Voice Demo */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section id="voice-demo" className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto">
           <h2 className="text-4xl font-bold text-center mb-16">Try Voice Assistant Live</h2>
           <div className="max-w-4xl mx-auto">
@@ -248,11 +249,10 @@ const VoiceAssistant = () => {
                 <div className="text-3xl mb-3">{lang.flag}</div>
                 <h3 className="font-bold mb-2">{lang.name}</h3>
                 <p className="text-sm text-muted-foreground mb-2">{lang.speakers}</p>
-                <div className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  lang.status === 'Full Support' ? 'bg-primary/20 text-primary' :
+                <div className={`text-xs px-2 py-1 rounded-full font-medium ${lang.status === 'Full Support' ? 'bg-primary/20 text-primary' :
                   lang.status === 'Beta' ? 'bg-accent/20 text-accent' :
-                  'bg-muted text-muted-foreground'
-                }`}>
+                    'bg-muted text-muted-foreground'
+                  }`}>
                   {lang.status}
                 </div>
               </Card>

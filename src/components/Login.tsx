@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -15,7 +15,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'farmer' | 'government'>('farmer'); // Default role
+  const [role, setRole] = useState<'farmer' | 'government' | 'buyer'>('farmer'); // Default role
   const [userInfoStep, setUserInfoStep] = useState(true); // Step to choose role
 
   const { login, setUser } = useAuthStore();
@@ -59,11 +59,13 @@ const Login = () => {
 
       toast({
         title: "Welcome back!",
-        description: `Logged in as ${role === 'government' ? 'Government Official' : 'Farmer'}`,
+        description: `Logged in as ${role === 'government' ? 'Government Official' : role === 'buyer' ? 'Buyer' : 'Farmer'}`,
       });
 
       if (role === 'government') {
         navigate('/gov/dashboard');
+      } else if (role === 'buyer') {
+        navigate('/buyer/dashboard');
       } else {
         navigate('/');
       }
@@ -112,7 +114,7 @@ const Login = () => {
                 <Sparkles className="w-10 h-10 text-white" />
               </motion.div>
               <CardTitle className="text-3xl font-bold gradient-text mb-2">
-                {userInfoStep ? "Welcome Back" : `Login as ${role === 'farmer' ? 'Farmer' : 'Official'}`}
+                {userInfoStep ? "Welcome Back" : `Login as ${role === 'farmer' ? 'Farmer' : role === 'buyer' ? 'Buyer' : 'Official'}`}
               </CardTitle>
               <CardDescription className="text-lg">
                 {userInfoStep ? "Choose your login portal" : "Enter your credentials to continue"}
@@ -151,6 +153,21 @@ const Login = () => {
                       </div>
                     </div>
                   </div>
+
+                  <div
+                    onClick={() => { setRole('buyer'); setUserInfoStep(false); }}
+                    className="p-6 border-2 border-slate-700 bg-slate-900/50 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-orange-900/10 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-orange-900/30 rounded-full text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                        <ShoppingBag className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Buyer / Trader</h3>
+                        <p className="text-sm text-slate-400">Access Marketplace & Insights</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleLogin} className="space-y-6">
@@ -168,7 +185,7 @@ const Login = () => {
                       <Input
                         id="email"
                         type="email"
-                        placeholder={role === 'government' ? "official@gov.in" : "farmer@gmail.com"}
+                        placeholder={role === 'government' ? "official@gov.in" : role === 'buyer' ? "trader@agrimarket.com" : "farmer@gmail.com"}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -245,7 +262,7 @@ const Login = () => {
                 </form>
               )}
 
-              {role === 'farmer' && (
+              {(role === 'farmer' || role === 'buyer') && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

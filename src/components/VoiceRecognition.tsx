@@ -21,9 +21,6 @@ const VoiceRecognition = () => {
   const languages = [
     { code: 'hi-IN', name: 'Hindi', flag: '🇮🇳' },
     { code: 'en-IN', name: 'English (India)', flag: '🇮🇳' },
-    { code: 'pa-IN', name: 'Punjabi', flag: '🇮🇳' },
-    { code: 'mr-IN', name: 'Marathi', flag: '🇮🇳' },
-    { code: 'gu-IN', name: 'Gujarati', flag: '🇮🇳' },
   ];
 
   const [isSupported, setIsSupported] = useState(true);
@@ -343,7 +340,10 @@ const VoiceRecognition = () => {
                         headers: {
                           'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ text: q.hindi })
+                        body: JSON.stringify({
+                          text: q.hindi,
+                          language: 'hi-IN' // Examples are in Hindi
+                        })
                       });
 
                       let aiResponse = '';

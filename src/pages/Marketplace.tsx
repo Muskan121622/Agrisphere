@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Minus, IndianRupee, Clock, Sprout, Search, ChevronDown, Volume2, Phone, MapPin, User } from "lucide-react";
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Minus, IndianRupee, Clock, Sprout, Search, ChevronDown, Volume2, Phone, MapPin, User, AlertTriangle, Pause, Play, Square } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -69,9 +71,22 @@ const Marketplace = () => {
     location: "" // State/City
   });
 
+  // Demands State
+  const [demands, setDemands] = useState<any[]>([]);
+
   useEffect(() => {
     fetchListings();
+    fetchDemands();
   }, []);
+
+  const fetchDemands = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/demands");
+      setDemands(res.data);
+    } catch (err) {
+      console.error("Failed to fetch demands", err);
+    }
+  };
 
   const fetchListings = async () => {
     try {
@@ -176,12 +191,47 @@ const Marketplace = () => {
     }
   };
 
-  const playAudio = (text: string, lang: 'en-US' | 'hi-IN') => {
+  // Audio State
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+
+  const handleAudioControl = (id: string, text: string, lang: 'en-US' | 'hi-IN') => {
     if (!text) return;
+
+    // If clicking same ID
+    if (playingId === id) {
+      if (isPaused) {
+        window.speechSynthesis.resume();
+        setIsPaused(false);
+      } else {
+        window.speechSynthesis.pause();
+        setIsPaused(true);
+      }
+      return;
+    }
+
+    // New audio
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
+    utterance.onend = () => {
+      setPlayingId(null);
+      setIsPaused(false);
+      setCurrentUtterance(null);
+    };
+
+    setPlayingId(id);
+    setIsPaused(false);
+    setCurrentUtterance(utterance);
     window.speechSynthesis.speak(utterance);
+  };
+
+  const stopAudio = () => {
+    window.speechSynthesis.cancel();
+    setPlayingId(null);
+    setIsPaused(false);
+    setCurrentUtterance(null);
   };
 
   return (
@@ -196,7 +246,7 @@ const Marketplace = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[500px] bg-primary/10">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[650px] bg-primary/10">
           <TabsTrigger value="advisory" className="data-[state=active]:bg-primary data-[state=active]:text-white">
             🌱 Smart Advisory
           </TabsTrigger>
@@ -206,7 +256,57 @@ const Marketplace = () => {
           <TabsTrigger value="trends" className="data-[state=active]:bg-primary data-[state=active]:text-white">
             📈 Market Trends
           </TabsTrigger>
+          <TabsTrigger value="demands" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+            📢 Buyer Requests
+          </TabsTrigger>
         </TabsList>
+
+        {/* TAB 4: BUYER DEMANDS */}
+        <TabsContent value="demands" className="space-y-6 animate-in fade-in slide-in-from-right-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {demands.length === 0 ? (
+              <div className="col-span-full text-center py-12 bg-muted/20 rounded-lg border-2 border-dashed">
+                <p className="text-muted-foreground">No active buyer requirements at the moment.</p>
+              </div>
+            ) : (
+              demands.map((demand: any) => (
+                <Card key={demand.id} className="border-orange-200 overflow-hidden relative group hover:shadow-lg transition-all">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700">
+                        BUYING
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">{demand.timestamp?.split(' ')[0]}</span>
+                    </div>
+                    <CardTitle className="text-xl text-slate-800">{demand.crop}</CardTitle>
+                    <CardDescription>Required by {demand.buyerName}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-slate-50 p-2 rounded">
+                        <span className="text-xs text-slate-500 block">Quantity Needed</span>
+                        <span className="font-bold text-slate-900">{demand.quantity} Q</span>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded">
+                        <span className="text-xs text-slate-500 block">Target Price</span>
+                        <span className="font-bold text-green-600">₹{demand.price}/Q</span>
+                      </div>
+                    </div>
+                    {demand.location && (
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <MapPin className="w-3 h-3" /> Location Preference: {demand.location}
+                      </div>
+                    )}
+                    <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2">
+                      <Phone className="w-4 h-4" /> Contact Buyer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
 
         {/* TAB 1: SMART ADVISORY */}
         <TabsContent value="advisory" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -322,6 +422,16 @@ const Marketplace = () => {
                     </CardHeader>
                   </Card>
 
+                  {result.seasonality_check && result.seasonality_check.is_valid === false && (
+                    <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Seasonality Warning</AlertTitle>
+                      <AlertDescription>
+                        {result.seasonality_check.message}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <Accordion type="single" collapsible defaultValue="item-1" className="w-full space-y-4">
 
                     {/* Stage 1: Seed & Sowing */}
@@ -337,12 +447,29 @@ const Marketplace = () => {
                       </AccordionTrigger>
                       <AccordionContent className="pb-4 pt-2 border-t mt-2">
                         <div className="flex gap-2 mb-4">
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_1?.voice_summary_en, 'en-US')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> English
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage1-en', result.stage_1?.voice_summary_en, 'en-US')}
+                            className={cn("text-xs transition-colors", playingId === 'stage1-en' && "bg-green-100 border-green-300")}
+                          >
+                            {playingId === 'stage1-en' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            English
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_1?.voice_summary_hi, 'hi-IN')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> हिंदी
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage1-hi', result.stage_1?.voice_summary_hi, 'hi-IN')}
+                            className={cn("text-xs transition-colors", playingId === 'stage1-hi' && "bg-green-100 border-green-300")}
+                          >
+                            {playingId === 'stage1-hi' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            हिंदी
                           </Button>
+                          {(playingId === 'stage1-en' || playingId === 'stage1-hi') && (
+                            <Button variant="ghost" size="sm" onClick={stopAudio} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Square className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                         <div className="grid md:grid-cols-2 gap-6 mt-2">
                           <div>
@@ -379,12 +506,29 @@ const Marketplace = () => {
                       </AccordionTrigger>
                       <AccordionContent className="pb-4 pt-2 border-t mt-2">
                         <div className="flex gap-2 mb-4">
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_2?.voice_summary_en, 'en-US')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> English
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage2-en', result.stage_2?.voice_summary_en, 'en-US')}
+                            className={cn("text-xs transition-colors", playingId === 'stage2-en' && "bg-blue-100 border-blue-300")}
+                          >
+                            {playingId === 'stage2-en' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            English
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_2?.voice_summary_hi, 'hi-IN')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> हिंदी
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage2-hi', result.stage_2?.voice_summary_hi, 'hi-IN')}
+                            className={cn("text-xs transition-colors", playingId === 'stage2-hi' && "bg-blue-100 border-blue-300")}
+                          >
+                            {playingId === 'stage2-hi' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            हिंदी
                           </Button>
+                          {(playingId === 'stage2-en' || playingId === 'stage2-hi') && (
+                            <Button variant="ghost" size="sm" onClick={stopAudio} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Square className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                         <div className="grid md:grid-cols-2 gap-6 mt-2">
                           <div>
@@ -415,12 +559,29 @@ const Marketplace = () => {
                       </AccordionTrigger>
                       <AccordionContent className="pb-4 pt-2 border-t mt-2">
                         <div className="flex gap-2 mb-4">
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_3?.voice_summary_en, 'en-US')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> English
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage3-en', result.stage_3?.voice_summary_en, 'en-US')}
+                            className={cn("text-xs transition-colors", playingId === 'stage3-en' && "bg-yellow-100 border-yellow-300")}
+                          >
+                            {playingId === 'stage3-en' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            English
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_3?.voice_summary_hi, 'hi-IN')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> हिंदी
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage3-hi', result.stage_3?.voice_summary_hi, 'hi-IN')}
+                            className={cn("text-xs transition-colors", playingId === 'stage3-hi' && "bg-yellow-100 border-yellow-300")}
+                          >
+                            {playingId === 'stage3-hi' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            हिंदी
                           </Button>
+                          {(playingId === 'stage3-en' || playingId === 'stage3-hi') && (
+                            <Button variant="ghost" size="sm" onClick={stopAudio} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Square className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                         <div className="grid md:grid-cols-2 gap-6 mt-2">
                           <div className="bg-slate-900 text-white p-6 rounded-lg shadow-lg">
@@ -457,12 +618,29 @@ const Marketplace = () => {
                       </AccordionTrigger>
                       <AccordionContent className="pb-4 pt-2 border-t mt-2">
                         <div className="flex gap-2 mb-4">
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_4?.voice_summary_en, 'en-US')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> English
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage4-en', result.stage_4?.voice_summary_en, 'en-US')}
+                            className={cn("text-xs transition-colors", playingId === 'stage4-en' && "bg-purple-100 border-purple-300")}
+                          >
+                            {playingId === 'stage4-en' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            English
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => playAudio(result.stage_4?.voice_summary_hi, 'hi-IN')} className="text-xs">
-                            <Volume2 className="w-3 h-3 mr-1" /> हिंदी
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAudioControl('stage4-hi', result.stage_4?.voice_summary_hi, 'hi-IN')}
+                            className={cn("text-xs transition-colors", playingId === 'stage4-hi' && "bg-purple-100 border-purple-300")}
+                          >
+                            {playingId === 'stage4-hi' && !isPaused ? <Pause className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            हिंदी
                           </Button>
+                          {(playingId === 'stage4-en' || playingId === 'stage4-hi') && (
+                            <Button variant="ghost" size="sm" onClick={stopAudio} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Square className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                         <div className="grid md:grid-cols-3 gap-4 mb-6 mt-4">
                           <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">

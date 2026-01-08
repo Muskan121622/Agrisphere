@@ -314,11 +314,13 @@ CONFIDENTIAL - MINISTRY OF AGRICULTURE
                                                     </div>
                                                 </div>
 
-                                                {c.status === 'Pending' && (
+                                                {!['Approved', 'Rejected'].includes(c.status) && (
                                                     <div className="flex gap-2 w-full md:w-auto">
-                                                        <Button size="sm" variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 flex-1" onClick={() => handleCaseAction(c.id, 'verify')}>
-                                                            Verify
-                                                        </Button>
+                                                        {c.status !== 'Under Verification' && (
+                                                            <Button size="sm" variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 flex-1" onClick={() => handleCaseAction(c.id, 'verify')}>
+                                                                Verify
+                                                            </Button>
+                                                        )}
                                                         <Button size="sm" className="bg-red-900/50 text-red-300 hover:bg-red-900/80 border border-red-900 flex-1" onClick={() => handleCaseAction(c.id, 'reject')}>
                                                             Reject
                                                         </Button>

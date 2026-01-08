@@ -15,14 +15,14 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'farmer' | 'government';
+  role: 'farmer' | 'government' | 'buyer';
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string, role?: 'farmer' | 'government') => Promise<void>;
+  login: (email: string, password: string, role?: 'farmer' | 'government' | 'buyer') => Promise<void>;
   setUser: (user: User) => void;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
 
       loading: true,
       setUser: (user: User) => set({ user, isAuthenticated: true, loading: false }),
-      login: async (email: string, password: string, role: 'farmer' | 'government' = 'farmer') => {
+      login: async (email: string, password: string, role: 'farmer' | 'government' | 'buyer' = 'farmer') => {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           const firebaseUser = userCredential.user;

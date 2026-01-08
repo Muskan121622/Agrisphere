@@ -46,6 +46,15 @@ export const simplifyTextForFarmer = async (text: string, language: "Hindi" | "E
 };
 
 /**
+ * Stops any ongoing speech.
+ */
+export const stopSpeech = () => {
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
+};
+
+/**
  * Speaks the text using Web Speech API.
  */
 export const speakText = (text: string, lang: string = "hi-IN") => {
@@ -55,7 +64,7 @@ export const speakText = (text: string, lang: string = "hi-IN") => {
     }
 
     // Stop previous speech
-    window.speechSynthesis.cancel();
+    stopSpeech();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;

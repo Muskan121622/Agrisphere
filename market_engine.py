@@ -37,9 +37,23 @@ def generate_ai_advisory(crop, sowing_date, acres, current_price, state="India")
 
     Analyze the situation and provide a strictly valid JSON response.
     Do NOT use markdown code blocks. Just the raw JSON.
+    
+    CRITICAL: FIRST, validate if growing {crop} in {state} during this month (based on sowing date) is agronomically suitable.
+    Strictly follow these Indian Season Rules:
+    - Wheat (Rabi): Must be sown in Oct, Nov, or Dec. Sowing in Summer (May-Aug) is IMPOSSIBLE/WRONG.
+    - Rice/Paddy (Kharif): Typically sown in June-July.
+    - Cotton: Sown in April-May (North) or June-July (Central/South).
+    - Maize: Kharif (June-July), Rabi (Oct-Nov), or Spring.
+    - Mustard: Rabi (Oct-Nov).
+    
+    If data violates these rules, set is_valid to false and provide a warning.
 
     Structure:
     {{
+        "seasonality_check": {{
+            "is_valid": true/false,
+            "message": "Start with '⚠️ Warning:' if invalid. Explain WHY the crop/date combination is risky or wrong. If valid, leave empty or 'Good timing'."
+        }},
         "crop": "{crop}",
         "state": "{state}",
         "stage_1": {{
@@ -132,6 +146,7 @@ def analyze_market(data):
         "sowing_date": sowing_date.strftime("%Y-%m-%d"),
         "acres": acres,
         "state": state,
+        "seasonality_check": ai_advisory.get('seasonality_check', {'is_valid': True, 'message': ''}),
         
         # Section 1: Pre-Sowing
         "stage_1": {
@@ -288,7 +303,80 @@ def get_market_prices(state, district, market, category="Use best judgement"):
         print(f"Error fetching market prices: {e}")
         return []
 
+def get_buyer_insights(crop, state, district=""):
+    """
+    Generate AI-driven buying insights for a specific crop/location.
+    """
+    try:
+        from groq import Groq
+        client = Groq(api_key=GROQ_API_KEY)
+
+        # Get simulated/real price to ground the AI's analysis
+        price_data = simulate_market_prices(crop)
+        current_price = price_data.get('current_price', 'N/A')
+        
+        prompt = f"""
+        You are a Strategic Agricultural Procurement Advisor for a bulk buyer.
+        Provide market intelligence for:
+        Crop: {crop}
+        Location: {district}, {state}, India
+        Current Market Price: ₹{current_price}/Quintal
+        
+        Analyze current trends and provide 3 strategic insights aimed at a BUYER (trader/retailer).
+        
+        Insights should cover:
+        1. Price Trend (Rising/Falling and why)
+        2. Best Procurement Strategy (Buy now vs Wait)
+        3. Quality/Logistics Advice (e.g., "Sourcing from X district is better due to low moisture")
+        
+        RETURN JSON Structure:
+        {{
+            "analysis_brief": "Short summary of the market situation (max 2 sentences).",
+            "demand_indicator": "High" | "Medium" | "Low",
+            "price_forecast": "Likely to Rise" | "Stable" | "Likely to Drop",
+            "msp_comparison": "Above MSP" | "Below MSP" | "Near MSP",
+            "current_price": {current_price}, 
+            "insights": [
+                {{
+                    "type": "Trend",
+                    "text": "..."
+                }},
+                {{
+                    "type": "Strategy",
+                    "text": "..."
+                }},
+                {{
+                    "type": "Logistics",
+                    "text": "..."
+                }}
+            ]
+        }}
+        """
+        
+        completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            temperature=0.4,
+            response_format={"type": "json_object"}
+        )
+        
+        content = completion.choices[0].message.content
+        result = json.loads(content)
+        # Ensure price is passed through even if AI misses it
+        result['current_price'] = current_price
+        return result
+        
+    except Exception as e:
+        print(f"Error generating buyer insights: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "analysis_brief": "Unable to generate insights at the moment.",
+            "demand_indicator": "Medium",
+            "current_price": "N/A",
+            "insights": []
+        }
+
 if __name__ == "__main__":
     # Test
     print(analyze_market({'crop': 'rice', 'state': 'Punjab'}))
-
